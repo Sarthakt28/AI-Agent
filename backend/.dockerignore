@@ -1,0 +1,34 @@
+# Environment files (secrets)
+.env
+.env.*
+.env.production
+.env.production.example
+.env.example
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Virtual environment
+venv/
+.venv/
+
+# Temp uploads
+temp_uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Tests
+test_*.py
+
+# OS
+.DS_Store
+Thumbs.db

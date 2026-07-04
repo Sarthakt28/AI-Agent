@@ -1,0 +1,77 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: agent-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent_password
+      POSTGRES_DB: agentdb
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - agent-network
+
+  # Redis (Cache)
+  redis:
+    image: redis:7-alpine
+    container_name: agent-redis-prod
+    restart: unless-stopped
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - agent-network
+
+  # ChromaDB (Vector Store)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: agent-chromadb-prod
+    restart: unless-stopped
+    volumes:
+      - chroma_prod_data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - agent-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agent-backend-prod
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      - postgres
+      - redis
+      - chromadb
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - agent-network
+
+  # React Frontend (served via Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agent-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - agent-network
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  chroma_prod_data:
+
+networks:
+  agent-network:
+    driver: bridge

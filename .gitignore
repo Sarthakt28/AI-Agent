@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.*
+.env.production
+
+# Temp uploads
+temp_uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+postgres_data/
+redis_data/
+chroma_data/
+
+# Node (frontend has its own .gitignore too)
+node_modules/
+dist/
