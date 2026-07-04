@@ -36,8 +36,23 @@ function Auth({ onLogin }) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.detail || 'Authentication failed. Please try again.');
+        let errorMsg = 'Authentication failed. Please try again.';
+        if (data && data.detail) {
+          if (typeof data.detail === 'string') {
+            errorMsg = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            // Format FastAPI Pydantic list of validation errors
+            errorMsg = data.detail.map(err => {
+              const field = err.loc[err.loc.length - 1];
+              return `${field}: ${err.msg}`;
+            }).join(', ');
+          } else if (typeof data.detail === 'object') {
+            errorMsg = JSON.stringify(data.detail);
+          }
+        }
+        throw new Error(errorMsg);
       }
+
 
       localStorage.setItem('token', data.access_token);
 
