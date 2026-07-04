@@ -674,7 +674,9 @@ function Dashboard({ user, token, onLogout }) {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
+        // Normalize CRLF to LF for consistent splitting across platforms
+        const normalized = buffer.replace(/\r\n/g, '\n');
+        const parts = normalized.split('\n\n');
         buffer = parts.pop() || '';
 
         for (const part of parts) {
@@ -872,7 +874,9 @@ function Dashboard({ user, token, onLogout }) {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
+        // Normalize CRLF to LF for consistent splitting across platforms
+        const normalized = buffer.replace(/\r\n/g, '\n');
+        const parts = normalized.split('\n\n');
         buffer = parts.pop() || '';
 
         for (const part of parts) {
