@@ -609,7 +609,9 @@ function Dashboard({ user, token, onLogout }) {
   const [editText, setEditText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarLoading, setSidebarLoading] = useState(false);
+  const [deleteRunId, setDeleteRunId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -826,22 +828,29 @@ function Dashboard({ user, token, onLogout }) {
   }
 
   async function handleDeleteRun(runId) {
-    if (!window.confirm('Delete this session?')) return;
+    setDeleteRunId(runId);
+  }
+
+  async function confirmDeleteRun() {
+    if (!deleteRunId) return;
     try {
-      const res = await fetch(`${API_BASE}/agent/run/${runId}`, {
+      const res = await fetch(`${API_BASE}/agent/run/${deleteRunId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Delete failed');
-      setRuns((prev) => prev.filter((r) => r.id !== runId));
-      if (activeRunId === runId) {
-        const remaining = runs.filter((r) => r.id !== runId);
+      setRuns((prev) => prev.filter((r) => r.id !== deleteRunId));
+      if (activeRunId === deleteRunId) {
+        const remaining = runs.filter((r) => r.id !== deleteRunId);
         setActiveRunId(remaining.length > 0 ? remaining[0].id : null);
       }
     } catch {
       setError('Failed to delete session.');
+    } finally {
+      setDeleteRunId(null);
     }
   }
+
 
   async function handleSendMessage(content) {
     if (!activeRunId) { setError('Please create or select a session first.'); return; }
@@ -1106,8 +1115,22 @@ function Dashboard({ user, token, onLogout }) {
             </div>
           </div>
         )}
+        {/* Delete Session Confirmation Modal */}
+        {deleteRunId !== null && (
+          <div className="modal-overlay" onClick={() => setDeleteRunId(null)}>
+            <div className="modal-card glass-panel" onClick={(e) => e.stopPropagation()}>
+              <h3 className="modal-title" style={{ color: 'var(--accent-red, #ff4d4f)' }}>Delete Session</h3>
+              <p className="modal-subtitle">Are you sure you want to delete this session? This action cannot be undone.</p>
+              <div className="modal-actions">
+                <button className="btn btn-secondary" onClick={() => setDeleteRunId(null)}>Cancel</button>
+                <button className="btn btn-primary" style={{ backgroundColor: 'var(--accent-red, #ff4d4f)', borderColor: 'var(--accent-red, #ff4d4f)' }} onClick={confirmDeleteRun}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
+
   );
 }
 
