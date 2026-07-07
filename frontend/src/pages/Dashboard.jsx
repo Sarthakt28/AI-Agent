@@ -358,12 +358,11 @@ function MessageText({ content, isAnimating, onFinished }) {
       }, 35);
 
       return () => clearInterval(interval);
-    } else {
-      setDisplayedText(content);
     }
-  }, [content, isAnimating]);
+  }, [content, isAnimating, onFinished]);
 
-  return <div className="message-text">{formatMessageContent(displayedText)}</div>;
+  const textToRender = isAnimating ? displayedText : content;
+  return <div className="message-text">{formatMessageContent(textToRender)}</div>;
 }
 
 /* ──────────────────────────── Copy Button ────────────────────────── */
@@ -479,7 +478,7 @@ function ChatWindow({
     <div className="chat-messages" ref={containerRef}>
       {chatMessages.map((msg) => {
         return (
-          <div key={msg.id} className={`message ${msg.role}`}>
+          <div key={msg.key || msg.id} className={`message ${msg.role}`}>
             <div className="message-avatar">
               {msg.role === 'user' ? <UserIcon size={16} /> : <Bot size={16} />}
             </div>
@@ -523,7 +522,7 @@ function ChatWindow({
         );
       })}
 
-      {loading && (
+      {loading && chatMessages[chatMessages.length - 1]?.role !== 'assistant' && (
         <div className="message assistant">
           <div className="message-avatar"><Bot size={16} /></div>
           <div className="message-bubble">
@@ -542,6 +541,14 @@ function ChatWindow({
 function MessageInput({ onSend, onUpload, disabled }) {
   const [text, setText] = useState('');
   const fileRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Auto-focus textarea when it becomes enabled
+  useEffect(() => {
+    if (!disabled && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [disabled]);
 
   const submit = () => {
     const trimmed = text.trim();
@@ -558,6 +565,7 @@ function MessageInput({ onSend, onUpload, disabled }) {
     <div className="message-input-wrapper">
       <div className="message-input-box glass-panel">
         <textarea
+          ref={textareaRef}
           className="message-textarea"
           placeholder="Ask your agent anything…"
           value={text}
@@ -650,6 +658,7 @@ function Dashboard({ user, token, onLogout }) {
 
   const handleSaveEdit = async (msgId, newContent) => {
     if (!newContent.trim()) return;
+    const oldMessages = [...messages];
     setEditingMessageId(null);
     setAgentLoading(true);
     setError('');
@@ -699,7 +708,14 @@ function Dashboard({ user, token, onLogout }) {
           if (eventName === 'status') {
             const data = JSON.parse(dataVal);
             if (data.messages) {
-              currentMessages = data.messages;
+              currentMessages = data.messages.map((f, idx) => {
+                const local = oldMessages[idx];
+                let key = f.id;
+                if (local && (local.id === f.id || local.role === f.role)) {
+                  key = local.key || local.id;
+                }
+                return { ...f, key };
+              });
             }
             setMessages(currentMessages);
           } else if (eventName === 'token') {
@@ -791,7 +807,20 @@ function Dashboard({ user, token, onLogout }) {
       const res = await fetch(`${API_BASE}/agent/run/${runId}/messages`, {
         headers: authHeaders(token),
       });
-      if (res.ok) setMessages(await res.json());
+      if (res.ok) {
+        const fetched = await res.json();
+        setMessages((prev) => {
+          if (prev.length === 0) return fetched;
+          return fetched.map((f, idx) => {
+            const local = prev[idx];
+            let key = f.id;
+            if (local && (local.id === f.id || local.role === f.role)) {
+              key = local.key || local.id;
+            }
+            return { ...f, key };
+          });
+        });
+      }
     } catch {
       setError('Failed to load messages.');
     }
@@ -855,7 +884,15 @@ function Dashboard({ user, token, onLogout }) {
   async function handleSendMessage(content) {
     if (!activeRunId) { setError('Please create or select a session first.'); return; }
 
-    const tempMsg = { id: Date.now(), role: 'user', content, tool_name: null, created_at: new Date().toISOString() };
+    const clientKey = 'msg-' + Date.now();
+    const tempMsg = { 
+      id: clientKey, 
+      key: clientKey, 
+      role: 'user', 
+      content, 
+      tool_name: null, 
+      created_at: new Date().toISOString() 
+    };
     setMessages((prev) => [...prev, tempMsg]);
     setAgentLoading(true);
     setError('');
@@ -906,13 +943,13 @@ function Dashboard({ user, token, onLogout }) {
           if (eventName === 'status') {
             const data = JSON.parse(dataVal);
             currentMessages = currentMessages.map((m) =>
-              m.id === tempMsg.id ? { ...m, id: data.user_message_id } : m
+              m.key === clientKey ? { ...m, id: data.user_message_id } : m
             );
             setMessages(currentMessages);
           } else if (eventName === 'token') {
             currentAssistantText += dataVal;
             const lastMsg = currentMessages[currentMessages.length - 1];
-            if (lastMsg && lastMsg.id === 'streaming_assistant') {
+            if (lastMsg && (lastMsg.key === 'streaming_assistant' || lastMsg.id === 'streaming_assistant')) {
               currentMessages[currentMessages.length - 1] = {
                 ...lastMsg,
                 content: currentAssistantText,
@@ -920,6 +957,7 @@ function Dashboard({ user, token, onLogout }) {
             } else {
               currentMessages.push({
                 id: 'streaming_assistant',
+                key: 'streaming_assistant',
                 role: 'assistant',
                 content: currentAssistantText,
                 created_at: new Date().toISOString(),
