@@ -1,35 +1,39 @@
 # AI Agent Platform 🤖
 
-An autonomous, production-ready AI Agent Hub featuring **RAG (Retrieval-Augmented Generation)**, **SSE Streaming**, and secure **Docker Sandbox** execution capabilities. The platform is built using a modern decoupled architecture: a **FastAPI** backend powering a LangGraph ReAct agent executor, and a **React (Vite)** frontend with styled glassmorphic UI components.
+An autonomous, production-ready AI Agent Hub featuring **Retrieval-Augmented Generation (RAG)**, **SSE Streaming**, a secure **Docker Sandbox** for python execution, and custom **Redis-backed rate limiting**. 
+
+The platform is designed around a decoupled architecture:
+*   **FastAPI Backend:** Runs a LangGraph ReAct agent executor using Gemini models, integrated with ChromaDB, Redis, and PostgreSQL.
+*   **React Frontend (Vite):** A stunning, modern interface utilizing styled glassmorphic UI components and responsive vanilla CSS layouts.
 
 ---
 
 ## 🚀 Key Features
 
-*   **Autonomous Agent Executor:** Powered by LangGraph and Gemini 1.5/3.5, supporting dynamic tool calling (web search, custom scripts).
-*   **Real-time Response Streaming:** Real-time Server-Sent Events (SSE) stream agent tokens, tool call initiations, execution statuses, and completed payloads.
-*   **Retrieval-Augmented Generation (RAG):** Document upload support (`.pdf`, `.docx`, `.txt`) with text chunking, OpenAI/Gemini embeddings, and vector indexing inside **ChromaDB**.
-*   **JWT User Authentication:** Complete authentication flow (Login/Signup/Profile) with JWT tokens and automatic refresh state management.
-*   **Session Management:** Interactive session creation, sidebar session history, and session deletion with custom confirmation modals.
-*   **Message Editing:** Edit previous queries to automatically delete subsequent messages and regenerate replies from that execution point.
-*   **Bypassing Fallbacks:** Fail-safe setups for Redis and PostgreSQL allowing local testing when specific cache or database services are unavailable.
+*   **Autonomous Agent Executor:** Powered by LangGraph and Google Gemini (`google-genai` / `langchain-google-genai`), dynamically deciding when to search the web, execute custom scripts, or retrieve vector data.
+*   **Secure Python Code Sandbox:** Executed in isolated, resource-constrained, and network-disabled `python:3.11-alpine` Docker containers (with limits on memory and processes to prevent attacks). Fallbacks gracefully to a local subprocess if Docker is unavailable.
+*   **Real-time Response Streaming:** Real-time Server-Sent Events (SSE) stream agent tokens, tool call initiations, execution status updates, and completed JSON payloads.
+*   **Retrieval-Augmented Generation (RAG)**: Document upload support (`.pdf`, `.docx`, `.txt`) with text chunking, Gemini/OpenAI embeddings, and vector indexing inside **ChromaDB**.
+*   **Redis Rate Limiting Middleware:** Protects message and stream endpoints with a sliding/fixed-window rate limiter (default: 10 requests per 60 seconds per user/IP), bypassing gracefully if Redis goes offline.
+*   **JWT User Authentication:** Robust authentication flow (Login/Signup/Profile state) using JSON Web Tokens (JWT) for secure routing and session handling.
+*   **Session Management & Chat Editing:** Supports creating persistent session threads, deleting threads, and editing previous chat queries (which deletes subsequent messages and triggers a clean agent regeneration).
+*   **Fail-Safe Backing Services:** Fallbacks allow you to run and test core API features locally even if Redis or PostgreSQL is not configured or online.
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Backend
-*   **Framework:** FastAPI (Python 3.10+)
-*   **Agent Orchestration:** LangGraph & LangChain ReAct Executor
-*   **Database:** PostgreSQL (with SQLAlchemy ORM)
-*   **Cache & Queue:** Redis
-*   **Vector Store:** ChromaDB
-*   **Auth:** JWT (Jose) & Bcrypt
-
-### Frontend
-*   **Framework:** React 19 + Vite (JavaScript)
-*   **Icons:** Lucide React
-*   **Styling:** Modern Glassmorphism layout with Vanilla CSS
+| Layer | Component / Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | **FastAPI** | High-performance Python web framework (Python 3.10+) |
+| | **LangGraph / LangChain** | Agent state & ReAct tool-calling orchestration |
+| | **PostgreSQL & SQLAlchemy** | Session logs, message history, user profile storage |
+| | **Redis** | Caching and sliding-window API rate limiting |
+| | **ChromaDB** | Vector database for RAG document indexing |
+| | **Docker Python SDK** | Isolated runtime execution sandbox for python code tools |
+| **Frontend**| **React 19 + Vite** | Next-generation React build tooling (JavaScript) |
+| | **Lucide React** | Clean, modern svg icon set |
+| | **Nginx** | Reverse proxy / server for production frontend assets |
 
 ---
 
@@ -39,139 +43,145 @@ An autonomous, production-ready AI Agent Hub featuring **RAG (Retrieval-Augmente
 ├── backend/                  # FastAPI backend application
 │   ├── app/
 │   │   ├── agent/            # LangGraph agent definitions & executors
-│   │   ├── api/              # API router endpoints (V1)
+│   │   │   └── brain.py      # Core agent logic and tool registry
+│   │   ├── api/              # API router endpoints
+│   │   │   └── v1/
+│   │   │       ├── agent.py  # Agent runs, messaging, streams, and file uploads
+│   │   │       └── auth.py   # JWT user signup, login, and profile
 │   │   ├── core/             # Security, rate limiter, & system configs
+│   │   │   ├── config.py     # Pydantic Settings configuration load
+│   │   │   ├── rate_limit.py # Redis rate limit class middleware
+│   │   │   ├── redis.py      # Redis client connection setup & availability check
+│   │   │   └── security.py   # Password hashing and JWT encoding/decoding
 │   │   ├── db/               # PostgreSQL session, models, and base schema
 │   │   ├── schemas/          # Pydantic models for request/response validation
-│   │   └── tools/            # Agent tool actions (RAG, search engines, etc.)
+│   │   └── tools/            # Agent tool actions
+│   │       ├── code_executor.py # Docker sandbox / Local subprocess executor
+│   │       ├── rag.py        # Vector embedding store search (ChromaDB)
+│   │       └── web_search.py # DuckDuckGo web search integration
 │   ├── main.py               # Backend main entrypoint (Uvicorn)
-│   └── test_all_apis.py      # Comprehensive API test suite script
+│   ├── requirements.txt      # Backend Python dependencies
+│   └── test_all_apis.py      # Comprehensive API integration test suite
 │
 ├── frontend/                 # React + Vite frontend application
 │   ├── src/
 │   │   ├── pages/            # View components (Auth, Dashboard)
 │   │   ├── App.jsx           # App shell and routing controller
 │   │   └── main.jsx          # Vite React index entrypoint
-│   └── vite.config.js        # Vite config
+│   ├── nginx.conf            # Nginx config for frontend container routing
+│   └── vite.config.js        # Vite compilation config
 │
-├── docker-compose.yml        # Development multi-container services definition
-└── docker-compose.prod.yml   # Production deployment multi-container services definition
+├── docker-compose.yml        # Development infrastructure container definition (Databases only)
+└── docker-compose.prod.yml   # Production full-stack container definition (DBs + App Services)
 ```
 
 ---
 
-## ⚙️ Local Development Setup
+## ⚙️ Development & Local Setup
 
-You can run the application either using **Docker Compose** or by setting up the **Backend & Frontend manually**.
+### Method 1: Hybrid Setup (Docker Infrastructure + Local Services)
+This is the recommended workflow for developing code locally while letting Docker manage database infrastructure.
 
-### Method 1: Running with Docker Compose (Recommended)
-
-1.  Make sure you have **Docker** and **Docker Compose** installed.
-2.  Clone the repository and configure the environment variables (see `.env` setup below).
-3.  Run the following command in the root folder:
-    ```bash
-    docker-compose up --build
-    ```
-4.  The application will be accessible at:
-    *   Frontend: `http://localhost:5173`
-    *   Backend API Docs: `http://localhost:8000/docs`
-
----
-
-### Method 2: Manual Local Setup (Without Docker)
-
-#### Prerequisites
-*   **Python 3.10+** installed.
-*   **PostgreSQL** (running locally on port `5434` or configured in `.env`).
-*   **Redis** (running locally on port `6379`).
-*   **ChromaDB** (running locally on port `8100`).
-
-#### 1. Setup the Backend
-1.  Navigate into the `backend/` directory:
-    ```bash
-    cd backend
-    ```
-2.  Create a virtual environment and activate it:
-    ```bash
-    python -m venv venv
-    # On Windows:
-    .\venv\Scripts\activate
-    # On macOS/Linux:
-    source venv/bin/activate
-    ```
-3.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  Configure your local environment variables in a `.env` file (refer to `.env.example`).
-5.  Start the FastAPI server:
-    ```bash
-    python main.py
-    ```
-
-#### 2. Setup the Frontend
-1.  Navigate into the `frontend/` directory:
-    ```bash
-    cd ../frontend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the Vite dev server:
-    ```bash
-    npm run dev
-    ```
-4.  The frontend will run on `http://localhost:5173`.
-
----
-
-## 🔒 Environment Variables Configuration
-
-Create a `.env` file in the `backend/` directory with the following variables:
-
-```env
-# Database
-DATABASE_URL=postgresql://agent:agent_password@localhost:5434/agentdb
-
-# Cache & Vector Store
-REDIS_URL=redis://localhost:6379/0
-CHROMA_HOST=localhost
-CHROMA_PORT=8100
-
-# Google Gemini API Key
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# JWT Auth Settings
-JWT_SECRET=your_jwt_secret_token_here
-JWT_ALGORITHM=HS256
-JWT_EXPIRY_MINUTES=1440
-
-# Agent Settings
-AGENT_MAX_STEPS=10
-CHUNK_SIZE=500
-CHUNK_OVERLAP=50
-CACHE_TTL_SECONDS=300
-
-# CORS Allowed Origins
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+#### 1. Spin up the Background Services (Postgres, Redis, ChromaDB)
+Make sure you have Docker installed and running, then execute:
+```bash
+docker-compose up -d
 ```
+*This starts Postgres (`5434`), Redis (`6379`), and ChromaDB (`8100`) in the background.*
+
+#### 2. Run the Backend Locally
+1. Navigate into the `backend/` directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   # On Windows:
+   .\venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Copy the environment variables template and configure your keys (e.g., `GEMINI_API_KEY`):
+   ```bash
+   cp .env.example .env
+   ```
+5. Start the FastAPI server:
+   ```bash
+   python main.py
+   ```
+   *The Swagger interactive documentation will be available at: http://localhost:8000/docs*
+
+#### 3. Run the Frontend Locally
+1. Navigate to the `frontend/` directory:
+   ```bash
+   cd ../frontend
+   ```
+2. Install the frontend dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *The interface will run at: http://localhost:5173*
 
 ---
 
-## 🌐 Production Deployment
+### Method 2: Full-Stack Docker Containerization (Production)
+To build and run the entire application stack—including the API and frontend—inside a single virtualized network:
 
-This project is fully ready to be deployed to PaaS providers:
+```bash
+docker-compose -f docker-compose.prod.yml up --build
+```
+* Once fully booted, the frontend is served via **Nginx** at `http://localhost:80`.
+* The API runs internally and links components securely within the network.
+* Make sure your backend environment variable files (`.env.production`) are filled out correctly.
 
-### Backend Deployment (e.g., Render)
-1.  Connect your repository `Sarthakt28/AI-Agent` to **Render** as a **Web Service**.
-2.  Specify the build context as `backend/` and use Python runtime.
-3.  Add all environment variables from `.env.production` in the Render environment variables tab.
-4.  Ensure your **PostgreSQL** database and **Redis** instance are provisioned and their connection strings are bound to `DATABASE_URL` and `REDIS_URL`.
+---
 
-### Frontend Deployment (e.g., Vercel)
-1.  Connect your repository `Sarthakt28/AI-Agent` to **Vercel**.
-2.  Set the **Root Directory** as `frontend`.
-3.  Select the **Vite** framework preset.
-4.  Set the environment variable `VITE_API_BASE` pointing to your deployed Render URL (e.g., `https://your-backend.onrender.com/api/v1`).
-5.  Deploy. Vercel will automatically trigger a build whenever you push new changes to the `main` branch.
+## 🔒 Environment Variables Reference
+
+Create a `.env` file in the `backend/` directory. Here are the core configuration keys:
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| **`DATABASE_URL`** | `postgresql://agent:agent_password@localhost:5434/agentdb` | Connection string for PostgreSQL database |
+| **`REDIS_URL`** | `redis://localhost:6379/0` | Connection string for Redis cache & rate limiting |
+| **`CHROMA_HOST`** | `localhost` | Hostname for the ChromaDB instance |
+| **`CHROMA_PORT`** | `8100` | Port for the ChromaDB instance |
+| **`GEMINI_API_KEY`** | *Required* | API Key to authenticate with Google Gemini models |
+| **`JWT_SECRET`** | `change-this-secret` | Cryptographic secret for signing auth session tokens |
+| **`JWT_ALGORITHM`** | `HS256` | JWT signing algorithm |
+| **`JWT_EXPIRY_MINUTES`** | `1440` | Duration (in minutes) user sessions remain valid |
+| **`AGENT_MAX_STEPS`** | `10` | Maximum reasoning steps before LangGraph times out |
+| **`CHUNK_SIZE`** | `500` | Character count per chunk for RAG uploads |
+| **`CHUNK_OVERLAP`** | `50` | Overlap character size between chunks |
+| **`CACHE_TTL_SECONDS`** | `300` | Temporary database cache timeout |
+| **`ALLOWED_ORIGINS`** | `http://localhost:5173,http://127.0.0.1:5173` | Allowed CORS client origins |
+
+---
+
+## 🌐 API Endpoint Reference
+
+All endpoints are prefixed with `/api/v1`.
+
+### 🔑 Authentication Routes
+*   `POST /auth/signup` - Registers a new user. Returns user details and JWT access tokens.
+*   `POST /auth/login` - Authenticates credentials. Returns JWT access tokens.
+*   `GET /auth/me` - Retrieves profile information for the authenticated user.
+
+### 🤖 Agent & Chat Routes
+*   `POST /agent/run` - Initiates a new chat run/session thread.
+*   `GET /agent/runs` - Lists all chat threads belonging to the authenticated user.
+*   `DELETE /agent/run/{run_id}` - Deletes an entire chat thread and its associated message history.
+*   `GET /agent/run/{run_id}/messages` - Gets all message logs inside a specific thread.
+*   `POST /agent/run/{run_id}/message` - Sends a user message (Non-streaming response mode).
+*   `POST /agent/run/{run_id}/message/stream` - Sends a user message (SSE streaming tokens, thoughts, and status updates). *Rate-limited.*
+*   `PUT /agent/run/{run_id}/message/{message_id}` - Edits a past message in the thread. *Rate-limited.*
+*   `POST /agent/run/{run_id}/upload-file` - Uploads a PDF/DOCX/TXT file for vector RAG retrieval.
