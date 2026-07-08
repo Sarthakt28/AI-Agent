@@ -477,31 +477,11 @@ async def edit_message(
         raise HTTPException(status_code=400, detail="Only user messages can be edited.")
 
     try:
-        # Check if there are any subsequent user messages in the session
-        next_user_msg = db.query(Message).filter(
-            Message.run_id == run_id,
-            Message.role == "user",
-            Message.id > message_id
-        ).order_by(Message.id.asc()).first()
-
-        if next_user_msg is None:
-            # Case A: Latest Query — delete subsequent responses, update in-place
-            db.query(Message).filter(Message.run_id == run_id, Message.id > message_id).delete(synchronize_session=False)
-            msg.content = req.content
-            db.commit()
-            db.refresh(msg)
-        else:
-            # Case B: Previous Query — delete range, add new message at bottom
-            db.query(Message).filter(
-                Message.run_id == run_id,
-                Message.id >= message_id,
-                Message.id < next_user_msg.id
-            ).delete(synchronize_session=False)
-
-            new_user_msg = Message(run_id=run_id, role="user", content=req.content)
-            db.add(new_user_msg)
-            db.commit()
-            db.refresh(new_user_msg)
+        # Delete all subsequent messages (both user and assistant) to truncate history chronologically
+        db.query(Message).filter(Message.run_id == run_id, Message.id > message_id).delete(synchronize_session=False)
+        msg.content = req.content
+        db.commit()
+        db.refresh(msg)
 
         # Set run status to running
         run.status = "running"
@@ -553,7 +533,7 @@ async def edit_message(
 
                 # Stream completed — save to DB
                 state = agent_executor.get_state(config)
-                new_messages = state.values.get("messages", [])[len(langchain_messages):]
+                new_messages = state.values.get("messages", [])[len(langchain_messages):] if state.values else []
                 final_assistant_msg = _process_and_save_messages(new_messages, run_id, db)
 
                 run.status = "completed"
@@ -574,7 +554,7 @@ async def edit_message(
                 print("Streaming request (edit) was cancelled by client connection drop.")
                 try:
                     state = agent_executor.get_state(config)
-                    new_messages = state.values.get("messages", [])[len(langchain_messages):]
+                    new_messages = state.values.get("messages", [])[len(langchain_messages):] if state.values else []
                     _process_and_save_messages(new_messages, run_id, db)
                     run.status = "completed"
                     db.commit()
