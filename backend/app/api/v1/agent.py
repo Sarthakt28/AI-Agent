@@ -3,6 +3,7 @@ import time
 import shutil
 import json
 import asyncio
+import re as _re
 from sse_starlette.sse import EventSourceResponse
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
@@ -404,32 +405,33 @@ def upload_file(
         )
 
     try:
-        # Save file temporarily to disk
-        temp_file_path = os.path.join(TEMP_DIR, file.filename)
+        # Sanitize filename to prevent path traversal attacks
+        safe_filename = _re.sub(r"[^\w.\-]", "_", os.path.basename(file.filename or "upload"))
+        temp_file_path = os.path.join(TEMP_DIR, safe_filename)
         with open(temp_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Double-check file size on disk (for chunked uploads where file.size may be None)
-        file_size = os.path.getsize(temp_file_path)
-        if file_size > MAX_UPLOAD_BYTES:
-            os.remove(temp_file_path)
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"File too large. Maximum allowed size is {settings.MAX_UPLOAD_SIZE_MB}MB."
-            )
+        try:
+            # Double-check file size on disk (for chunked uploads where file.size may be None)
+            file_size = os.path.getsize(temp_file_path)
+            if file_size > MAX_UPLOAD_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File too large. Maximum allowed size is {settings.MAX_UPLOAD_SIZE_MB}MB."
+                )
 
-        # Index in ChromaDB
-        result_msg = ingest_document(file.filename, temp_file_path, run_id=run_id, user_id=current_user.id, file_size=file_size)
-
-        # Delete temp file after successful ingestion
-        if os.path.exists(temp_file_path) and not result_msg.startswith("Error"):
-            os.remove(temp_file_path)
+            # Index in ChromaDB
+            result_msg = ingest_document(safe_filename, temp_file_path, run_id=run_id, user_id=current_user.id, file_size=file_size)
+        finally:
+            # Always clean up the temp file, regardless of success or failure
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
 
         # Save system message in DB
         doc_msg = Message(
             run_id=run_id,
             role="assistant",
-            content=f"[SYSTEM] Uploaded and processed file: '{file.filename}'. {result_msg}"
+            content=f"[SYSTEM] Uploaded and processed file: '{safe_filename}'. {result_msg}"
         )
         db.add(doc_msg)
         db.commit()
@@ -440,12 +442,12 @@ def upload_file(
             config = {"configurable": {"thread_id": f"run_{run_id}"}}
             agent_executor.update_state(
                 config,
-                {"messages": [AIMessage(content=f"[SYSTEM] Uploaded and processed file: '{file.filename}'. {result_msg}")]}
+                {"messages": [AIMessage(content=f"[SYSTEM] Uploaded and processed file: '{safe_filename}'. {result_msg}")]}
             )
         except Exception as memory_err:
             print(f"Failed to update agent checkpointer state memory: {memory_err}")
 
-        return {"filename": file.filename, "status": "success", "detail": result_msg}
+        return {"filename": safe_filename, "status": "success", "detail": result_msg}
     except HTTPException:
         raise  # Re-raise HTTP exceptions as-is
     except Exception as e:
@@ -490,11 +492,26 @@ async def edit_message(
         # Load complete history for the run session
         messages = db.query(Message).filter(Message.run_id == run_id).order_by(Message.created_at.asc()).all()
 
-        # Format history for LangGraph ReAct agent (only user and assistant messages)
+        # Format history for LangGraph ReAct agent
+        # Include user, assistant, tool_call (AIMessage with tool_calls), and tool_result (ToolMessage)
+        from langchain_core.messages import HumanMessage, AIMessage as LC_AIMessage, ToolMessage
         langchain_messages = []
         for m in messages:
-            if m.role in ["user", "assistant"]:
-                langchain_messages.append((m.role, m.content))
+            if m.role == "user":
+                langchain_messages.append(HumanMessage(content=m.content))
+            elif m.role == "assistant":
+                langchain_messages.append(LC_AIMessage(content=m.content))
+            elif m.role == "tool_call" and m.tool_data:
+                # Reconstruct AIMessage with tool_calls so agent memory is complete
+                langchain_messages.append(LC_AIMessage(
+                    content=m.content or "",
+                    tool_calls=[m.tool_data] if isinstance(m.tool_data, dict) else []
+                ))
+            elif m.role == "tool_result" and m.tool_data:
+                langchain_messages.append(ToolMessage(
+                    content=m.content or "",
+                    tool_call_id=m.tool_data.get("tool_call_id", "unknown")
+                ))
 
         async def event_generator():
             # Start a fresh thread state with history

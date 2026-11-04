@@ -12,6 +12,11 @@ services:
       - postgres_prod_data:/var/lib/postgresql/data
     networks:
       - agent-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agentdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis (Cache)
   redis:
@@ -22,6 +27,11 @@ services:
       - redis_prod_data:/data
     networks:
       - agent-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ChromaDB (Vector Store)
   chromadb:
@@ -34,6 +44,11 @@ services:
       - ANONYMIZED_TELEMETRY=FALSE
     networks:
       - agent-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   # FastAPI Backend
   backend:
@@ -45,9 +60,12 @@ services:
     env_file:
       - ./backend/.env.production
     depends_on:
-      - postgres
-      - redis
-      - chromadb
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:

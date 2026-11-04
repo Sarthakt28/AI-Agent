@@ -760,7 +760,12 @@ function Dashboard({ user, token, onLogout }) {
             const data = JSON.parse(dataVal);
             setError(data.detail || 'Streaming error occurred');
           } else if (eventName === 'done') {
+            const data = JSON.parse(dataVal);
+            // Fetch final messages from DB, then trigger typewriter on the new assistant message
             await fetchMessages(activeRunId);
+            if (data.assistant_message_id) {
+              setAnimatingMessageId(data.assistant_message_id);
+            }
           }
         }
       }
@@ -989,7 +994,12 @@ function Dashboard({ user, token, onLogout }) {
             const data = JSON.parse(dataVal);
             setError(data.detail || 'Streaming error occurred');
           } else if (eventName === 'done') {
+            const data = JSON.parse(dataVal);
+            // Fetch final messages from DB, then trigger typewriter on the new assistant message
             await fetchMessages(activeRunId);
+            if (data.assistant_message_id) {
+              setAnimatingMessageId(data.assistant_message_id);
+            }
           }
         }
       }

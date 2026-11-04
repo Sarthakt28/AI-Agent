@@ -119,6 +119,12 @@ def execute_python_code(code: str) -> str:
         
     except docker.errors.ContainerError as ce:
         # Python traceback error catches (e.g., SyntaxError, ZeroDivisionError)
+        # Ensure the container is cleaned up even on error
+        if ce.container:
+            try:
+                ce.container.remove(force=True)
+            except Exception:
+                pass
         stderr = ce.stderr.decode("utf-8") if ce.stderr else str(ce)
         return f"Code Execution Error:\n{stderr}"
         

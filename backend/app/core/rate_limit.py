@@ -1,20 +1,22 @@
 import time
 from fastapi import Request, HTTPException, status, Depends
 from app.core.redis import redis_client, redis_available
+from app.core.security import get_current_user
+from app.db.models.user import User
 
 class RateLimiter:
     def __init__(self, requests_limit: int = 10, window_seconds: int = 60):
         self.requests_limit = requests_limit
         self.window_seconds = window_seconds
 
-    def __call__(self, request: Request):
+    def __call__(self, request: Request, current_user: User = Depends(get_current_user)):
         # If Redis is down or unavailable, bypass rate limit check
         if not redis_available or not redis_client:
             return
-        
-        # Extract user_id from request state (set by get_current_user dependency in endpoint)
-        # If no user context available, use client IP as fallback
-        user_id = getattr(request.state, "user_id", None)
+
+        # Use authenticated user_id (guaranteed by get_current_user dependency)
+        # Falls back to IP only if somehow user is not in request state
+        user_id = current_user.id if current_user else getattr(request.state, "user_id", None)
         if user_id is None:
             user_id = request.client.host if request.client else "unknown"
             
