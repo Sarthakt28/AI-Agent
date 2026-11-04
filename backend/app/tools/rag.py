@@ -213,11 +213,23 @@ def ingest_document(file_name: str, file_path: str, run_id: int = None, user_id:
 def query_documents(query: str, run_id: int = None, n_results: int = 3) -> str:
     if collection is None:
         return "RAG search is currently unavailable(chromadb not connected)"
-    
+
+    # FIX: Refuse unfiltered search to prevent cross-session data leaks
+    if run_id is None:
+        return "No document context available for this session."
+
     try:
-        # Filter query results by run_id if provided
-        where_filter = {"run_id": run_id} if run_id is not None else None
-        
+        where_filter = {"run_id": run_id}
+
+        # FIX: Cap n_results to available docs to avoid ChromaDB crash on small collections
+        try:
+            total_docs = collection.count()
+            if total_docs == 0:
+                return "No documents have been uploaded to this session yet."
+            n_results = min(n_results, total_docs)
+        except Exception:
+            pass
+
         results = collection.query(
             query_texts = [query],
             n_results = n_results,

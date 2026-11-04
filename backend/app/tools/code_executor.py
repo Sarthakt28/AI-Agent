@@ -92,7 +92,9 @@ def execute_python_code(code: str) -> str:
             network_disabled=True,      # Secure: no internet access inside sandbox
             mem_limit="128m",           # Secure: max memory limit 128 MB
             pids_limit=50,              # Secure: prevent fork bomb attacks
-            read_only=True,             # Secure: read-only filesystem
+            # FIX: removed read_only=True — it breaks stdlib (numpy, matplotlib etc write to /tmp)
+            # Instead mount /tmp as a writable tmpfs (ephemeral, in-memory, auto-wiped)
+            tmpfs={"/tmp": "size=64m,mode=1777"},
             stdout=True,
             stderr=True
         )

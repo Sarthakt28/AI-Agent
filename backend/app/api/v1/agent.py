@@ -149,6 +149,13 @@ def _parse_stream_event(event):
     return None, None
 
 
+# ====== Helper: derive a short session goal from message content ======
+def _derive_goal(content: str, max_len: int = 60) -> str:
+    """Truncate first line of user message to use as session title."""
+    first_line = content.strip().split("\n")[0]
+    return first_line[:max_len] + ("…" if len(first_line) > max_len else "")
+
+
 # ============================================================
 # 1. Create a new Agent Run Session
 # ============================================================
@@ -218,6 +225,11 @@ def send_message(
     if not run:
         raise HTTPException(status_code=404, detail="Agent run session not found.")
 
+    # Auto-name session from first user message
+    if not run.goal or run.goal.strip() == "":
+        run.goal = _derive_goal(req.content)
+        db.commit()
+
     # Save User message in DB
     user_msg = Message(run_id=run_id, role="user", content=req.content)
     db.add(user_msg)
@@ -233,8 +245,10 @@ def send_message(
         "configurable": {"thread_id": f"run_{run_id}"},
         "recursion_limit": settings.AGENT_MAX_STEPS
     }
+
+    # FIX: initialize pre_count before try block to avoid NameError in except
+    pre_count = 0
     try:
-        # Get pre-execution state messages count
         state = agent_executor.get_state(config)
         pre_count = len(state.values.get("messages", [])) if state.values else 0
 
@@ -276,6 +290,11 @@ async def send_message_stream(
     if not run:
         raise HTTPException(status_code=404, detail="Agent run session not found.")
 
+    # Auto-name session from first user message
+    if not run.goal or run.goal.strip() == "":
+        run.goal = _derive_goal(req.content)
+        db.commit()
+
     # Save User message in DB
     user_msg = Message(run_id=run_id, role="user", content=req.content)
     db.add(user_msg)
@@ -292,6 +311,8 @@ async def send_message_stream(
             "recursion_limit": settings.AGENT_MAX_STEPS
         }
 
+        # FIX: initialize pre_count before try to avoid NameError in CancelledError handler
+        pre_count = 0
         try:
             # 1. Get pre-execution state messages count
             state = agent_executor.get_state(config)
@@ -407,7 +428,10 @@ def upload_file(
     try:
         # Sanitize filename to prevent path traversal attacks
         safe_filename = _re.sub(r"[^\w.\-]", "_", os.path.basename(file.filename or "upload"))
-        temp_file_path = os.path.join(TEMP_DIR, safe_filename)
+
+        # FIX: Prefix with run_id to prevent filename collision between concurrent uploads
+        temp_file_path = os.path.join(TEMP_DIR, f"run_{run_id}_{safe_filename}")
+
         with open(temp_file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
@@ -493,7 +517,6 @@ async def edit_message(
         messages = db.query(Message).filter(Message.run_id == run_id).order_by(Message.created_at.asc()).all()
 
         # Format history for LangGraph ReAct agent
-        # Include user, assistant, tool_call (AIMessage with tool_calls), and tool_result (ToolMessage)
         from langchain_core.messages import HumanMessage, AIMessage as LC_AIMessage, ToolMessage
         langchain_messages = []
         for m in messages:
@@ -502,7 +525,6 @@ async def edit_message(
             elif m.role == "assistant":
                 langchain_messages.append(LC_AIMessage(content=m.content))
             elif m.role == "tool_call" and m.tool_data:
-                # Reconstruct AIMessage with tool_calls so agent memory is complete
                 langchain_messages.append(LC_AIMessage(
                     content=m.content or "",
                     tool_calls=[m.tool_data] if isinstance(m.tool_data, dict) else []
@@ -519,6 +541,9 @@ async def edit_message(
                 "configurable": {"thread_id": f"run_{run_id}_edit_{message_id}_{int(time.time())}"},
                 "recursion_limit": settings.AGENT_MAX_STEPS
             }
+
+            # FIX: initialize before try to avoid NameError in CancelledError handler
+            pre_len = len(langchain_messages)
 
             try:
                 # Send initial event with updated messages list
@@ -550,7 +575,7 @@ async def edit_message(
 
                 # Stream completed — save to DB
                 state = agent_executor.get_state(config)
-                new_messages = state.values.get("messages", [])[len(langchain_messages):] if state.values else []
+                new_messages = state.values.get("messages", [])[pre_len:] if state.values else []
                 final_assistant_msg = _process_and_save_messages(new_messages, run_id, db)
 
                 run.status = "completed"
@@ -571,7 +596,7 @@ async def edit_message(
                 print("Streaming request (edit) was cancelled by client connection drop.")
                 try:
                     state = agent_executor.get_state(config)
-                    new_messages = state.values.get("messages", [])[len(langchain_messages):] if state.values else []
+                    new_messages = state.values.get("messages", [])[pre_len:] if state.values else []
                     _process_and_save_messages(new_messages, run_id, db)
                     run.status = "completed"
                     db.commit()

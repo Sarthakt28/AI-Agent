@@ -6,13 +6,23 @@ venv/
 .venv/
 *.egg-info/
 
-# Environment variables (NEVER commit secrets)
+# Environment variables (NEVER commit secrets — use .env.example instead)
 .env
 .env.*
 .env.production
 
 # Temp uploads
 temp_uploads/
+
+# Local ChromaDB fallback (created when remote ChromaDB is unavailable)
+chroma_db/
+
+# Local SQLite fallback DB
+*.db
+
+# Test artifacts
+backend/test_spaces.docx
+backend/test_all_apis.py
 
 # IDE
 .vscode/
@@ -29,6 +39,6 @@ postgres_data/
 redis_data/
 chroma_data/
 
-# Node (frontend has its own .gitignore too)
+# Node
 node_modules/
 dist/
