@@ -510,13 +510,11 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
 }
 .feature-tag {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--accent-cyan);
-  background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  padding: 4px 10px;
-  border-radius: 100px;
+  opacity: 0.7;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -858,7 +856,6 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   .showcase-inner { grid-template-columns: 1fr; gap: 60px; }
   .footer-inner { grid-template-columns: 1fr 1fr; gap: 40px; }
   .feature-band { grid-template-columns: 52px 1fr; }
-  .feature-tag { display: none; }
 }
 @media (max-width: 768px) {
   .landing-nav { padding: 16px 24px; }
