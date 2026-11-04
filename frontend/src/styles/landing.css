@@ -885,6 +885,31 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   background-clip: text;
 }
 
+/* ─── Override index.css global lock ────────────────────────── */
+/* index.css sets html/body/root to overflow:hidden + height:100%
+   which blocks all scrolling. Reset those when landing is active. */
+html:has(body.landing-active) {
+  height: auto;
+  overflow: visible;
+}
+body.landing-active {
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  display: block !important;
+  flex-direction: unset !important;
+}
+body.landing-active::before,
+body.landing-active::after {
+  display: none; /* remove the dashboard glow pseudo-elements */
+}
+body.landing-active #root {
+  height: auto !important;
+  min-height: 100vh;
+  display: block !important;
+  flex-direction: unset !important;
+}
+
 /* ─── Reduced motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -892,3 +917,4 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
     transition-duration: 0.01ms !important;
   }
 }
+

@@ -12,8 +12,34 @@ import Footer from '../components/landing/Footer';
 
 export default function Landing({ onLaunch }) {
   useEffect(() => {
-    document.body.classList.add('landing-active');
-    return () => document.body.classList.remove('landing-active');
+    // Override index.css global overflow:hidden on html + body
+    const html = document.documentElement;
+    const body = document.body;
+
+    const prevHtmlHeight = html.style.height;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyHeight = body.style.height;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyDisplay = body.style.display;
+
+    html.style.height = 'auto';
+    html.style.overflow = 'visible';
+    body.style.height = 'auto';
+    body.style.overflowX = 'hidden';
+    body.style.overflowY = 'auto';
+    body.style.display = 'block';
+
+    body.classList.add('landing-active');
+
+    return () => {
+      // Restore when leaving landing page
+      html.style.height = prevHtmlHeight;
+      html.style.overflow = prevHtmlOverflow;
+      body.style.height = prevBodyHeight;
+      body.style.overflow = prevBodyOverflow;
+      body.style.display = prevBodyDisplay;
+      body.classList.remove('landing-active');
+    };
   }, []);
 
   return (
@@ -32,3 +58,4 @@ export default function Landing({ onLaunch }) {
     </>
   );
 }
+
