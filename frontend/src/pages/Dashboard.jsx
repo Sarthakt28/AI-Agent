@@ -440,7 +440,8 @@ function EditButton({ onEdit }) {
 /* ──────────────────────────── ChatWindow ─────────────────────────── */
 function ChatWindow({ 
   messages, 
-  loading, 
+  loading,
+  messagesLoading,
   animatingMessageId, 
   onAnimationFinished,
   editingMessageId,
@@ -463,6 +464,18 @@ function ChatWindow({
     if (m.role === 'tool_call' || m.role === 'tool_result') return false;
     return true;
   });
+
+  // Show skeleton while switching sessions
+  if (messagesLoading) {
+    return (
+      <div className="chat-messages" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: 'var(--text-muted)' }}>
+          <Loader2 size={28} className="spin-icon" />
+          <span style={{ fontSize: 14 }}>Loading messages...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (chatMessages.length === 0 && !loading) {
     return (
@@ -610,6 +623,7 @@ function Dashboard({ user, token, onLogout }) {
   const [activeRunId, setActiveRunId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [agentLoading, setAgentLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
   const [error, setError] = useState('');
   const [animatingMessageId, setAnimatingMessageId] = useState(null);
@@ -808,6 +822,7 @@ function Dashboard({ user, token, onLogout }) {
   }
 
   async function fetchMessages(runId) {
+    setMessagesLoading(true);
     try {
       const res = await fetch(`${API_BASE}/agent/run/${runId}/messages`, {
         headers: authHeaders(token),
@@ -828,6 +843,8 @@ function Dashboard({ user, token, onLogout }) {
       }
     } catch {
       setError('Failed to load messages.');
+    } finally {
+      setMessagesLoading(false);
     }
   }
 
@@ -1117,7 +1134,8 @@ function Dashboard({ user, token, onLogout }) {
         {/* Messages */}
         <ChatWindow 
           messages={messages.filter(m => !m.content?.startsWith('[SYSTEM]'))} 
-          loading={agentLoading} 
+          loading={agentLoading}
+          messagesLoading={messagesLoading}
           animatingMessageId={animatingMessageId}
           onAnimationFinished={() => setAnimatingMessageId(null)}
           editingMessageId={editingMessageId}

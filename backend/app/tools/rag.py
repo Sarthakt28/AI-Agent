@@ -265,9 +265,3 @@ def query_documents(query: str, run_id: int = None, n_results: int = 3) -> str:
         return "\n".join(formatted_matches)
     except Exception as e:
         return f"Error during RAG search: {str(e)}"
-
-        
-        
-        
-
-        

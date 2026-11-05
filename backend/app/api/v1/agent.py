@@ -429,6 +429,15 @@ def upload_file(
         # Sanitize filename to prevent path traversal attacks
         safe_filename = _re.sub(r"[^\w.\-]", "_", os.path.basename(file.filename or "upload"))
 
+        # Validate file extension (MIME type check)
+        ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+        file_ext = os.path.splitext(safe_filename)[1].lower()
+        if file_ext not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file type '{file_ext}'. Allowed: PDF, DOCX, TXT."
+            )
+
         # FIX: Prefix with run_id to prevent filename collision between concurrent uploads
         temp_file_path = os.path.join(TEMP_DIR, f"run_{run_id}_{safe_filename}")
 

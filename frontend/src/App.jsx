@@ -1,8 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing';
 
+// ---- Error Boundary ----
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary]', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          background: '#07070F', color: '#fff',
+          fontFamily: 'Inter, sans-serif', gap: 16, padding: 24, textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 48 }}>⚠️</div>
+          <h2 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>Something went wrong</h2>
+          <p style={{ color: '#9ea0b0', maxWidth: 400, margin: 0 }}>
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          </p>
+          <button
+            onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+            style={{
+              marginTop: 8, padding: '10px 24px',
+              background: 'linear-gradient(135deg,#4F6EF7,#8B5CF6)',
+              border: 'none', borderRadius: 8, color: '#fff',
+              cursor: 'pointer', fontSize: 14, fontWeight: 500,
+            }}
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ---- API base ----
 const API_BASE = import.meta.env.VITE_API_BASE || (window.location.port === '5173' ? 'http://localhost:8000/api/v1' : '/api/v1');
 
 function App() {
@@ -24,7 +69,7 @@ function App() {
           if (data) {
             setUser(data);
             setToken(savedToken);
-            setShowLanding(false); // Logged in users skip landing
+            setShowLanding(false); // Logged-in users skip landing
           } else {
             localStorage.removeItem('token');
           }
@@ -66,16 +111,28 @@ function App() {
 
   // Logged in → dashboard
   if (user) {
-    return <Dashboard user={user} token={token} onLogout={handleLogout} />;
+    return (
+      <ErrorBoundary>
+        <Dashboard user={user} token={token} onLogout={handleLogout} />
+      </ErrorBoundary>
+    );
   }
 
   // Not logged in and wants to go to auth
   if (!showLanding) {
-    return <Auth onLogin={handleLogin} />;
+    return (
+      <ErrorBoundary>
+        <Auth onLogin={handleLogin} />
+      </ErrorBoundary>
+    );
   }
 
   // Default: show landing page
-  return <Landing onLaunch={() => setShowLanding(false)} />;
+  return (
+    <ErrorBoundary>
+      <Landing onLaunch={() => setShowLanding(false)} />
+    </ErrorBoundary>
+  );
 }
 
 export default App;
