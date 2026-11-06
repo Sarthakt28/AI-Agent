@@ -19,7 +19,7 @@ function Sidebar({ token, runs, activeRunId, onSelectRun, onNewRun, onDeleteRun,
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <Cpu size={20} />
-          <span>AI Agent</span>
+          <span>Nexus AI</span>
         </div>
         <button className="icon-btn sidebar-close-btn mobile-only" onClick={onClose} title="Close sidebar">
           <X size={18} />
@@ -481,7 +481,7 @@ function ChatWindow({
     return (
       <div className="chat-empty">
         <div className="chat-empty-icon"><Bot size={40} /></div>
-        <h3>Ask your AI Agent anything</h3>
+        <h3>Ask Nexus AI anything</h3>
         <p>Type a message below. You can also upload documents for RAG search.</p>
       </div>
     );

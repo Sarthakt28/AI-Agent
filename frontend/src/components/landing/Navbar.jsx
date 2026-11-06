@@ -36,7 +36,7 @@ export default function Navbar({ onLaunch }) {
           <div className="nav-logo-icon">
             <Zap size={16} color="white" fill="white" />
           </div>
-          NexusAI
+          Nexus AI
         </a>
 
         <ul className="nav-links">

@@ -70,7 +70,7 @@ export default function Showcase() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            Unlike black-box AI assistants, NexusAI streams its full reasoning — tool
+            Unlike black-box AI assistants, Nexus AI streams its full reasoning — tool
             selections, search queries, retrieved passages, and final synthesis — all in
             real-time. You understand exactly how every answer was built.
           </motion.p>

@@ -15,7 +15,7 @@ export default function Footer() {
             <div className="nav-logo-icon">
               <Zap size={16} color="white" fill="white" />
             </div>
-            NexusAI
+            Nexus AI
           </div>
           <p className="footer-tagline">
             A production-grade autonomous AI agent platform built on LangGraph, Gemini, and FastAPI.
@@ -38,7 +38,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <p className="footer-copy">
-          © {new Date().getFullYear()} NexusAI. Built with LangGraph + Gemini 2.5 Flash.
+          © {new Date().getFullYear()} Nexus AI. Built with LangGraph + Gemini 2.5 Flash.
         </p>
         <div className="footer-social">
           <a href="https://github.com/Sarthakt28/AI-Agent" target="_blank" rel="noopener noreferrer" aria-label="GitHub">

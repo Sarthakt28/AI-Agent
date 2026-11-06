@@ -73,7 +73,7 @@ export default function About() {
             initial="hidden"
             animate={inView ? 'visible' : 'hidden'}
           >
-            NexusAI is built on LangGraph's ReAct architecture — a cognitive loop that reasons,
+            Nexus AI is built on LangGraph's ReAct architecture — a cognitive loop that reasons,
             selects tools, executes actions, and observes results in real-time. Powered by Google
             Gemini 2.5 Flash, it understands your documents, searches the web, and runs Python
             code securely in isolated containers.
