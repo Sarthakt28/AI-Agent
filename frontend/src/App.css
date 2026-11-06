@@ -776,10 +776,36 @@
 }
 
 .send-btn {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 8px;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+  border: none !important;
+  background: var(--accent-gradient, linear-gradient(135deg, #4f6ef7, #8b5cf6)) !important;
+  color: #ffffff !important;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s ease);
+}
+
+.send-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.send-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  display: block !important;
+  margin: auto !important;
 }
 
 .input-hint {

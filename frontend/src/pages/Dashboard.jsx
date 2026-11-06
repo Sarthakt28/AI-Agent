@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import '../App.css';
 import {
   Plus, MessageSquare, Trash2, Bot, Upload, X, AlertCircle,
   ChevronRight, Loader2, Send, User as UserIcon, Cpu, Copy, Check,
@@ -600,8 +601,10 @@ function MessageInput({ onSend, onUpload, disabled }) {
             className="btn btn-primary send-btn"
             onClick={submit}
             disabled={disabled || !text.trim()}
+            title="Send message"
+            aria-label="Send message"
           >
-            {disabled ? <Loader2 size={14} className="spin-icon" /> : <Send size={14} />}
+            {disabled ? <Loader2 size={16} className="spin-icon" /> : <Send size={16} />}
           </button>
         </div>
         <input

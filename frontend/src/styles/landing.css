@@ -264,7 +264,9 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   gap: 16px;
   flex-wrap: wrap;
 }
-.btn-primary {
+.landing-active .btn-primary,
+.hero-actions .btn-primary,
+.cta-actions .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -282,7 +284,9 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.btn-primary::before {
+.landing-active .btn-primary::before,
+.hero-actions .btn-primary::before,
+.cta-actions .btn-primary::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -290,9 +294,15 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   opacity: 0;
   transition: opacity 0.2s ease;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(79, 110, 247, 0.4); }
-.btn-primary:hover::before { opacity: 1; }
-.btn-secondary {
+.landing-active .btn-primary:hover,
+.hero-actions .btn-primary:hover,
+.cta-actions .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(79, 110, 247, 0.4); }
+.landing-active .btn-primary:hover::before,
+.hero-actions .btn-primary:hover::before,
+.cta-actions .btn-primary:hover::before { opacity: 1; }
+.landing-active .btn-secondary,
+.hero-actions .btn-secondary,
+.cta-actions .btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -308,7 +318,9 @@ body.landing-active::-webkit-scrollbar-thumb { background: var(--accent-blue); b
   text-decoration: none;
   transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
-.btn-secondary:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+.landing-active .btn-secondary:hover,
+.hero-actions .btn-secondary:hover,
+.cta-actions .btn-secondary:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
 .hero-scroll-hint {
   position: absolute;
   bottom: 32px;
