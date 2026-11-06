@@ -10,7 +10,7 @@ const tags = [
 ];
 
 const terminalOutputs = [
-  { type: 'prompt', text: 'user@nexusai:~$' },
+  { type: 'prompt', text: 'user@optimusai:~$' },
   { type: 'cmd', text: 'Ask: "Analyze Q3 report and get current AI market data"' },
   { type: 'output info', text: '── Thinking: I need to search the web and check the RAG index...' },
   { type: 'output tool', text: '⚙  tool_call: web_search("AI market trends Q3 2024")' },
@@ -70,7 +70,7 @@ export default function Showcase() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            Unlike black-box AI assistants, Nexus AI streams its full reasoning — tool
+            Unlike black-box AI assistants, Optimus AI streams its full reasoning — tool
             selections, search queries, retrieved passages, and final synthesis — all in
             real-time. You understand exactly how every answer was built.
           </motion.p>
@@ -106,7 +106,7 @@ export default function Showcase() {
               <div className="terminal-dot terminal-dot-red" />
               <div className="terminal-dot terminal-dot-yellow" />
               <div className="terminal-dot terminal-dot-green" />
-              <span className="terminal-title">nexusai — agent session</span>
+              <span className="terminal-title">optimusai — agent session</span>
             </div>
 
             <div className="terminal-body">
@@ -114,7 +114,7 @@ export default function Showcase() {
                 if (line.type === 'prompt-idle') {
                   return (
                     <div className="terminal-line" key={i}>
-                      <span className="terminal-prompt">user@nexusai:~$</span>
+                      <span className="terminal-prompt">user@optimusai:~$</span>
                       <span className="terminal-cursor" />
                     </div>
                   );
@@ -125,7 +125,7 @@ export default function Showcase() {
                 if (line.type === 'cmd') {
                   return (
                     <div className="terminal-line" key={i}>
-                      <span className="terminal-prompt">user@nexusai:~$</span>
+                      <span className="terminal-prompt">user@optimusai:~$</span>
                       <span className="terminal-cmd"> {line.text}</span>
                     </div>
                   );

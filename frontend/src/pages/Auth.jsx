@@ -79,7 +79,7 @@ function Auth({ onLogin }) {
         <div className="auth-logo">
           <Cpu size={32} />
         </div>
-        <h1>Nexus AI</h1>
+        <h1>Optimus AI</h1>
         <p className="auth-subtitle">Autonomous agent with RAG &amp; Docker Sandbox</p>
 
         <div className="auth-toggle">
