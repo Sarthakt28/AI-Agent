@@ -48,6 +48,7 @@ tools = [web_search_tool, rag_search_tool, python_sandbox_tool]
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",             # Fast, reliable model for tool-calling
     google_api_key=settings.GEMINI_API_KEY,
+    api_version="v1beta",
     temperature=0.2
 )
 
