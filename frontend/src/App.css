@@ -790,6 +790,8 @@
   border: none !important;
   background: var(--accent-gradient, linear-gradient(135deg, #4f6ef7, #8b5cf6)) !important;
   color: #ffffff !important;
+  -webkit-text-fill-color: initial !important;
+  line-height: 0 !important;
   cursor: pointer;
   transition: all var(--transition-fast, 0.2s ease);
 }
@@ -804,8 +806,10 @@
   height: 16px !important;
   color: #ffffff !important;
   stroke: #ffffff !important;
+  fill: none !important;
   display: block !important;
   margin: auto !important;
+  -webkit-text-fill-color: initial !important;
 }
 
 .input-hint {

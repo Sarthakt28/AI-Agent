@@ -603,8 +603,11 @@ function MessageInput({ onSend, onUpload, disabled }) {
             disabled={disabled || !text.trim()}
             title="Send message"
             aria-label="Send message"
+            style={{ color: '#ffffff' }}
           >
-            {disabled ? <Loader2 size={16} className="spin-icon" /> : <Send size={16} />}
+            {disabled
+              ? <Loader2 size={16} className="spin-icon" style={{ color: '#ffffff', stroke: '#ffffff' }} />
+              : <Send size={16} style={{ color: '#ffffff', stroke: '#ffffff' }} />}
           </button>
         </div>
         <input
