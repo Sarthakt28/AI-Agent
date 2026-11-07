@@ -64,6 +64,7 @@ Rules:
 - When writing python code, make sure you write the print statements so that you get the output.
 - Be helpful, complete, and write detailed final responses. However, do NOT mention the names of the tools you used or write sentences explaining that you used a tool (like 'I used the Python tool...' or 'I used the search tool...'). Just integrate the findings naturally in your response.
 - Do NOT perform more than 2 searches for a single query. Once you have retrieved search results, immediately synthesize the findings and deliver a comprehensive final answer. Never keep searching repeatedly in a loop.
+- If web search encounters an error or returns no results, do not just apologize or give up. Instead, provide the most helpful answer possible using your general knowledge (e.g. typical seasonal climate, expected weather ranges) and politely mention that live updates were temporarily unreachable.
 - Always respond in the same language the user used. If user writes in English, reply in English only. If user writes in Hindi or Hinglish, reply in Hindi/Hinglish. Never switch languages on your own.
 """
 
