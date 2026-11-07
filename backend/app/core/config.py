@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     CHROMA_PORT: int = 8100
     # Gemini
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.5-flash"
     # JWT Auth
     JWT_SECRET: str = "change-this-secret"
     JWT_ALGORITHM: str = "HS256"

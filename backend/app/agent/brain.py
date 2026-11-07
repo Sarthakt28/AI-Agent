@@ -47,7 +47,7 @@ tools = [web_search_tool, rag_search_tool, python_sandbox_tool]
 # ====== 2. Initialize Gemini model using LangChain ======
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash",             # Fast, high-quota model for tool-calling
+    model=settings.GEMINI_MODEL,          # Configurable high-quota model for tool-calling
     google_api_key=settings.GEMINI_API_KEY,
     api_version="v1beta",
     temperature=0.2
