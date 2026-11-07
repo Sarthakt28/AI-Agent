@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_MINUTES: int = 1440
     # Agent
-    AGENT_MAX_STEPS: int = 25
+    AGENT_MAX_STEPS: int = 50
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     CACHE_TTL_SECONDS: int = 300

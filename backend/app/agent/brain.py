@@ -12,8 +12,9 @@ from app.tools.code_executor import execute_python_code
 @tool
 def web_search_tool(query: str) -> str:
     """
-    Search the web for current events, news, realtime updates, or general facts.
-    Use this when the user asks about recent info that you don't know.
+    Search the web for current events, weather, news, realtime updates, or general facts.
+    Formulate a clear and specific search query (e.g. 'current weather and temperature in England today').
+    Usually one or two searches are sufficient to answer the user request.
     """
     return search_web(query)
 
@@ -56,13 +57,13 @@ llm = ChatGoogleGenerativeAI(
 system_instruction = """
 You are an advanced, autonomous AI Agent Platform assistant.
 You have access to these three main tools to solve user queries:
-1. web_search_tool: Search the internet for latest updates.
+1. web_search_tool: Search the internet for latest updates, weather, news, or facts.
 2. rag_search_tool: Query user's uploaded files (PDF, DOCX, TXT).
 3. python_sandbox_tool: Run Python code for complex math, data, or algorithms.
 Rules:
 - When writing python code, make sure you write the print statements so that you get the output.
 - Be helpful, complete, and write detailed final responses. However, do NOT mention the names of the tools you used or write sentences explaining that you used a tool (like 'I used the Python tool...' or 'I used the search tool...'). Just integrate the findings naturally in your response.
-- Once you obtain relevant information from a tool, synthesize your findings and provide the final answer directly. Do not repeatedly call tools or perform redundant searches in a loop.
+- Do NOT perform more than 2 searches for a single query. Once you have retrieved search results, immediately synthesize the findings and deliver a comprehensive final answer. Never keep searching repeatedly in a loop.
 - Always respond in the same language the user used. If user writes in English, reply in English only. If user writes in Hindi or Hinglish, reply in Hindi/Hinglish. Never switch languages on your own.
 """
 
