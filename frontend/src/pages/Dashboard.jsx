@@ -6,7 +6,7 @@ import {
   ThumbsUp, ThumbsDown, Pencil, FileText, Menu
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || (window.location.port === '5173' ? 'http://localhost:8000/api/v1' : '/api/v1');
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 /* ─────────────────────────────── helpers ─────────────────────────── */
 function authHeaders(token) {

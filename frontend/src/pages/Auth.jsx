@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Cpu, Mail, Lock, User as UserIcon, AlertCircle } from 'lucide-react';
 import '../App.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE || (window.location.port === '5173' ? 'http://localhost:8000/api/v1' : '/api/v1');
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 function Auth({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -56,12 +56,18 @@ function Auth({ onLogin }) {
 
       localStorage.setItem('token', data.access_token);
 
-      // Fetch user details then call parent callback
-      const meRes = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      const userData = await meRes.json();
-      onLogin(userData, data.access_token);
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        onLogin(data.user, data.access_token);
+      } else {
+        // Fallback if user object was not included in response
+        const meRes = await fetch(`${API_BASE}/auth/me`, {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        const userData = await meRes.json();
+        localStorage.setItem('user', JSON.stringify(userData));
+        onLogin(userData, data.access_token);
+      }
 
       setName('');
       setEmail('');

@@ -26,9 +26,9 @@ def signup(req: SignupRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)    # DB se fresh data le (id, created_at auto-generated hain)
 
-    # 4. Token return
+    # 4. Token & user return
     token = create_access_token(user.id)
-    return AuthResponse(access_token=token)
+    return AuthResponse(access_token=token, user=UserResponse.model_validate(user))
 
 @router.post("/login", response_model=AuthResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
@@ -47,9 +47,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             detail="Invalid email or password"
         )
 
-    # 3. Token return
+    # 3. Token & user return
     token = create_access_token(user.id)
-    return AuthResponse(access_token=token)
+    return AuthResponse(access_token=token, user=UserResponse.model_validate(user))
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):

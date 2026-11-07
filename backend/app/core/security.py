@@ -11,7 +11,7 @@ from app.db.models.user import User
 # ====== Password Hashing ======
 def hash_password(password: str) -> str:
     pwd_bytes = password.encode('utf-8')
-    salt = bcrypt.gensalt()
+    salt = bcrypt.gensalt(rounds=10)
     hashed = bcrypt.hashpw(pwd_bytes, salt)
     return hashed.decode('utf-8')
 

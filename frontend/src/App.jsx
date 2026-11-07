@@ -48,7 +48,7 @@ class ErrorBoundary extends Component {
 }
 
 // ---- API base ----
-const API_BASE = import.meta.env.VITE_API_BASE || (window.location.port === '5173' ? 'http://localhost:8000/api/v1' : '/api/v1');
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -57,10 +57,25 @@ function App() {
   // showLanding: null = checking, true = show landing, false = skip landing
   const [showLanding, setShowLanding] = useState(true);
 
-  // Auto-login if token exists in localStorage
+  // Auto-login with optimistic cached user for instant launch
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
     if (savedToken) {
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setToken(savedToken);
+          setShowLanding(false);
+          setAppLoading(false);
+        } catch {
+          // ignore JSON parse error, proceed to fetch
+        }
+      }
+
+      // Verify token in background (or foreground if no cached user)
       fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
@@ -69,12 +84,25 @@ function App() {
           if (data) {
             setUser(data);
             setToken(savedToken);
-            setShowLanding(false); // Logged-in users skip landing
+            localStorage.setItem('user', JSON.stringify(data));
+            setShowLanding(false);
           } else {
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setToken(null);
+            setShowLanding(true);
           }
         })
-        .catch(() => localStorage.removeItem('token'))
+        .catch(() => {
+          // Network error: if we had a cached user, keep it; otherwise clear
+          if (!savedUser) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setToken(null);
+          }
+        })
         .finally(() => setAppLoading(false));
     } else {
       setAppLoading(false);
@@ -84,11 +112,13 @@ function App() {
   function handleLogin(userData, userToken) {
     setUser(userData);
     setToken(userToken);
+    localStorage.setItem('user', JSON.stringify(userData));
     setShowLanding(false);
   }
 
   function handleLogout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setToken(null);
     setShowLanding(true);
