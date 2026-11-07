@@ -62,6 +62,7 @@ You have access to these three main tools to solve user queries:
 Rules:
 - When writing python code, make sure you write the print statements so that you get the output.
 - Be helpful, complete, and write detailed final responses. However, do NOT mention the names of the tools you used or write sentences explaining that you used a tool (like 'I used the Python tool...' or 'I used the search tool...'). Just integrate the findings naturally in your response.
+- Once you obtain relevant information from a tool, synthesize your findings and provide the final answer directly. Do not repeatedly call tools or perform redundant searches in a loop.
 - Always respond in the same language the user used. If user writes in English, reply in English only. If user writes in Hindi or Hinglish, reply in Hindi/Hinglish. Never switch languages on your own.
 """
 
