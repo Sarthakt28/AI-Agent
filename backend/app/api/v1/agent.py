@@ -48,6 +48,22 @@ def _process_and_save_messages(new_messages, run_id: int, db: Session):
         tool_data = None
         content = msg.content
 
+        # Normalize content to string (handles lists, dicts, None, objects)
+        if isinstance(content, list):
+            text_parts = []
+            for part in content:
+                if isinstance(part, dict) and "text" in part:
+                    text_parts.append(part["text"])
+                elif isinstance(part, str):
+                    text_parts.append(part)
+                elif hasattr(part, "text"):
+                    text_parts.append(str(part.text))
+            content = "\n".join(text_parts) if text_parts else ""
+        elif content is not None and not isinstance(content, str):
+            content = str(content)
+        elif content is None:
+            content = ""
+
         if msg_type == "AIMessage":
             if msg.tool_calls:
                 role = "tool_call"
@@ -55,28 +71,12 @@ def _process_and_save_messages(new_messages, run_id: int, db: Session):
                 tool_data = msg.tool_calls[0]
             else:
                 role = "assistant"
-                # Normalize content block to string
-                if isinstance(content, list):
-                    text_parts = []
-                    for part in content:
-                        if isinstance(part, dict) and "text" in part:
-                            text_parts.append(part["text"])
-                        elif isinstance(part, str):
-                            text_parts.append(part)
-                    content = "\n".join(text_parts)
-                elif not isinstance(content, str):
-                    content = str(content)
         elif msg_type == "ToolMessage":
             role = "tool_result"
             tool_name = getattr(msg, "name", None)
             tool_data = {
                 "tool_call_id": getattr(msg, "tool_call_id", None)
             }
-            if not isinstance(content, str):
-                content = str(content)
-        else:
-            if not isinstance(content, str):
-                content = str(content)
 
         db_msg = Message(
             run_id=run_id,
