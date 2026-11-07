@@ -106,6 +106,8 @@ def _handle_agent_error(db: Session, run_id: int, error: Exception, context: str
         clean_content = "[ERROR] Daily quota or rate limit exceeded for the AI model. Please try again shortly or check your Gemini plan."
     elif "401" in err_str or "UNAUTHENTICATED" in err_str or "API_KEY_INVALID" in err_str:
         clean_content = "[ERROR] Invalid or expired Gemini API key. Please update your GEMINI_API_KEY in backend/.env."
+    elif "503" in err_str or "UNAVAILABLE" in err_str:
+        clean_content = "[ERROR] AI servers are temporarily experiencing high demand. Automatic failover was attempted. Please try your message once more."
     else:
         clean_content = f"[ERROR] Agent failed{' during ' + context if context else ''}: {err_str[:200]}"
 

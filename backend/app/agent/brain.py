@@ -44,14 +44,26 @@ def python_sandbox_tool(code: str) -> str:
 tools = [web_search_tool, rag_search_tool, python_sandbox_tool]
 
 
-# ====== 2. Initialize Gemini model using LangChain ======
+# ====== 2. Initialize Gemini model using LangChain with High-Availability Fallback ======
 
-llm = ChatGoogleGenerativeAI(
-    model=settings.GEMINI_MODEL,          # Configurable high-quota model for tool-calling
+primary_llm = ChatGoogleGenerativeAI(
+    model=settings.GEMINI_MODEL,          # Primary model (e.g. gemini-3.5-flash)
     google_api_key=settings.GEMINI_API_KEY,
     api_version="v1beta",
-    temperature=0.2
+    temperature=0.2,
+    max_retries=3
 )
+
+fallback_llm = ChatGoogleGenerativeAI(
+    model="gemini-3-flash-preview",       # Seamless fallback if primary experiences temporary high demand (503)
+    google_api_key=settings.GEMINI_API_KEY,
+    api_version="v1beta",
+    temperature=0.2,
+    max_retries=3
+)
+
+# Automatically failover to secondary model if primary model experiences 503 high demand spikes
+llm = primary_llm.with_fallbacks([fallback_llm])
 
 # ====== 3. System Prompt for our Agent ======
 system_instruction = """
