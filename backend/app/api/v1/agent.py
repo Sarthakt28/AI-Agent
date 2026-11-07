@@ -101,10 +101,18 @@ def _handle_agent_error(db: Session, run_id: int, error: Exception, context: str
     run = db.query(AgentRun).filter(AgentRun.id == run_id).first()
     if run:
         run.status = "failed"
+    err_str = str(error)
+    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "Quota exceeded" in err_str:
+        clean_content = "[ERROR] Daily quota or rate limit exceeded for the AI model. Please try again shortly or check your Gemini plan."
+    elif "401" in err_str or "UNAUTHENTICATED" in err_str or "API_KEY_INVALID" in err_str:
+        clean_content = "[ERROR] Invalid or expired Gemini API key. Please update your GEMINI_API_KEY in backend/.env."
+    else:
+        clean_content = f"[ERROR] Agent failed{' during ' + context if context else ''}: {err_str[:200]}"
+
     error_msg = Message(
         run_id=run_id,
         role="assistant",
-        content=f"[ERROR] Agent failed{' during ' + context if context else ''}: {str(error)}"
+        content=clean_content
     )
     db.add(error_msg)
     db.commit()

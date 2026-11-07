@@ -516,6 +516,11 @@ function ChatWindow({
                       <button className="edit-action-btn save-btn" onClick={() => onSaveEdit(msg.id, editText)}>Save & Submit</button>
                     </div>
                   </div>
+                ) : msg.content?.startsWith('[ERROR]') ? (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: '#f87171', padding: '4px 0' }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{msg.content.replace(/^\[ERROR\]\s*/, '')}</span>
+                  </div>
                 ) : (
                   <MessageText 
                     content={msg.content} 
