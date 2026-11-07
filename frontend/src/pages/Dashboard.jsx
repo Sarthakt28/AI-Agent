@@ -334,36 +334,9 @@ function formatMessageContent(content) {
   return elements;
 }
 
-/* ──────────────────────────── Typewriter Text ────────────────────── */
-function MessageText({ content, isAnimating, onFinished }) {
-  const [displayedText, setDisplayedText] = useState(isAnimating ? '' : content);
-
-  useEffect(() => {
-    if (isAnimating) {
-      setDisplayedText('');
-      const words = content.split(' ');
-      let index = 0;
-
-      const interval = setInterval(() => {
-        if (index < words.length) {
-          setDisplayedText((prev) => prev + (index === 0 ? '' : ' ') + words[index]);
-          index++;
-          const container = document.querySelector('.chat-messages');
-          if (container) {
-            container.scrollTop = container.scrollHeight;
-          }
-        } else {
-          clearInterval(interval);
-          if (onFinished) onFinished();
-        }
-      }, 35);
-
-      return () => clearInterval(interval);
-    }
-  }, [content, isAnimating, onFinished]);
-
-  const textToRender = isAnimating ? displayedText : content;
-  return <div className="message-text">{formatMessageContent(textToRender)}</div>;
+/* ──────────────────────────── Message Text ───────────────────────── */
+function MessageText({ content }) {
+  return <div className="message-text">{formatMessageContent(content)}</div>;
 }
 
 /* ──────────────────────────── Copy Button ────────────────────────── */
@@ -443,8 +416,6 @@ function ChatWindow({
   messages, 
   loading,
   messagesLoading,
-  animatingMessageId, 
-  onAnimationFinished,
   editingMessageId,
   editText,
   setEditText,
@@ -524,8 +495,6 @@ function ChatWindow({
                 ) : (
                   <MessageText 
                     content={msg.content} 
-                    isAnimating={msg.id === animatingMessageId} 
-                    onFinished={onAnimationFinished} 
                   />
                 )}
               </div>
@@ -637,7 +606,6 @@ function Dashboard({ user, token, onLogout }) {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState('');
   const [error, setError] = useState('');
-  const [animatingMessageId, setAnimatingMessageId] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editText, setEditText] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -754,6 +722,7 @@ function Dashboard({ user, token, onLogout }) {
             } else {
               currentMessages.push({
                 id: 'streaming_assistant',
+                key: 'streaming_assistant',
                 role: 'assistant',
                 content: currentAssistantText,
                 created_at: new Date().toISOString(),
@@ -786,17 +755,22 @@ function Dashboard({ user, token, onLogout }) {
             setError(data.detail || 'Streaming error occurred');
           } else if (eventName === 'done') {
             const data = JSON.parse(dataVal);
-            // Fetch final messages from DB, then trigger typewriter on the new assistant message
-            await fetchMessages(activeRunId);
             if (data.assistant_message_id) {
-              setAnimatingMessageId(data.assistant_message_id);
+              const lastIdx = currentMessages.length - 1;
+              if (lastIdx >= 0 && currentMessages[lastIdx].role === 'assistant') {
+                currentMessages[lastIdx] = {
+                  ...currentMessages[lastIdx],
+                  id: data.assistant_message_id
+                };
+              }
             }
+            await fetchMessages(activeRunId, false);
           }
         }
       }
     } catch (err) {
       setError(err.message);
-      await fetchMessages(activeRunId);
+      await fetchMessages(activeRunId, false);
     } finally {
       setAgentLoading(false);
       setEditText('');
@@ -810,7 +784,7 @@ function Dashboard({ user, token, onLogout }) {
 
   /* load messages when activeRunId changes */
   useEffect(() => {
-    if (activeRunId) fetchMessages(activeRunId);
+    if (activeRunId) fetchMessages(activeRunId, true);
     else setMessages([]);
   }, [activeRunId]);
 
@@ -832,8 +806,8 @@ function Dashboard({ user, token, onLogout }) {
     }
   }
 
-  async function fetchMessages(runId) {
-    setMessagesLoading(true);
+  async function fetchMessages(runId, showSkeleton = false) {
+    if (showSkeleton) setMessagesLoading(true);
     try {
       const res = await fetch(`${API_BASE}/agent/run/${runId}/messages`, {
         headers: authHeaders(token),
@@ -842,11 +816,20 @@ function Dashboard({ user, token, onLogout }) {
         const fetched = await res.json();
         setMessages((prev) => {
           if (prev.length === 0) return fetched;
+          const keyMap = new Map();
+          prev.forEach((m) => {
+            if (m.id) keyMap.set(String(m.id), m.key || m.id);
+          });
+
           return fetched.map((f, idx) => {
-            const local = prev[idx];
-            let key = f.id;
-            if (local && (local.id === f.id || local.role === f.role)) {
-              key = local.key || local.id;
+            let key = keyMap.get(String(f.id));
+            if (!key) {
+              const local = prev[idx];
+              if (local && (local.id === f.id || local.role === f.role)) {
+                key = local.key || local.id;
+              } else {
+                key = f.id;
+              }
             }
             return { ...f, key };
           });
@@ -855,7 +838,7 @@ function Dashboard({ user, token, onLogout }) {
     } catch {
       setError('Failed to load messages.');
     } finally {
-      setMessagesLoading(false);
+      if (showSkeleton) setMessagesLoading(false);
     }
   }
 
@@ -1023,18 +1006,23 @@ function Dashboard({ user, token, onLogout }) {
             setError(data.detail || 'Streaming error occurred');
           } else if (eventName === 'done') {
             const data = JSON.parse(dataVal);
-            // Fetch final messages from DB, then trigger typewriter on the new assistant message
-            await fetchMessages(activeRunId);
             if (data.assistant_message_id) {
-              setAnimatingMessageId(data.assistant_message_id);
+              const lastIdx = currentMessages.length - 1;
+              if (lastIdx >= 0 && currentMessages[lastIdx].role === 'assistant') {
+                currentMessages[lastIdx] = {
+                  ...currentMessages[lastIdx],
+                  id: data.assistant_message_id
+                };
+              }
             }
+            await fetchMessages(activeRunId, false);
           }
         }
       }
     } catch (err) {
       setError(err.message);
       setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
-      await fetchMessages(activeRunId);
+      await fetchMessages(activeRunId, false);
     } finally {
       setAgentLoading(false);
     }
@@ -1056,7 +1044,7 @@ function Dashboard({ user, token, onLogout }) {
       if (res.ok) {
         const d = await res.json();
         setUploadNotice(`✅ "${d.filename}" uploaded successfully!`);
-        await fetchMessages(activeRunId);
+        await fetchMessages(activeRunId, false);
         setTimeout(() => setUploadNotice(''), 4000);
       } else {
         const d = await res.json();
@@ -1147,8 +1135,6 @@ function Dashboard({ user, token, onLogout }) {
           messages={messages.filter(m => !m.content?.startsWith('[SYSTEM]'))} 
           loading={agentLoading}
           messagesLoading={messagesLoading}
-          animatingMessageId={animatingMessageId}
-          onAnimationFinished={() => setAnimatingMessageId(null)}
           editingMessageId={editingMessageId}
           editText={editText}
           setEditText={setEditText}
