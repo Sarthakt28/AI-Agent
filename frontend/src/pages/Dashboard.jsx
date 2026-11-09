@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../App.css';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import {
   Plus, MessageSquare, Trash2, Bot, Upload, X, AlertCircle,
   ChevronRight, Loader2, Send, User as UserIcon, Cpu, Copy, Check,
@@ -336,8 +340,37 @@ function formatMessageContent(content, keyPrefix = 'msg') {
 }
 
 /* ──────────────────────────── Message Text ───────────────────────── */
-function MessageText({ content, msgId }) {
-  return <div className="message-text">{formatMessageContent(content, String(msgId || 'msg'))}</div>;
+function MessageText({ content }) {
+  return (
+    <div className="message-text">
+      <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          // Reuse your existing styled CodeBlockComponent for fenced code blocks
+          code({ node, inline, className, children, ...props }) {
+            const language = (className || '').replace('language-', '');
+            if (!inline && language) {
+              return <CodeBlockComponent language={language} code={String(children).replace(/\n$/, '')} />;
+            }
+            return <code className="inline-code" {...props}>{children}</code>;
+          },
+          // Open links safely in a new tab
+          a({ href, children }) {
+            return <a href={href} target="_blank" rel="noopener noreferrer" className="msg-link">{children}</a>;
+          },
+          p({ children }) { return <p className="message-paragraph">{children}</p>; },
+          h1({ children }) { return <h2 className="msg-heading msg-h1">{children}</h2>; },
+          h2({ children }) { return <h3 className="msg-heading msg-h2">{children}</h3>; },
+          h3({ children }) { return <h4 className="msg-heading msg-h3">{children}</h4>; },
+          blockquote({ children }) { return <blockquote className="msg-blockquote">{children}</blockquote>; },
+          hr() { return <hr className="msg-hr" />; },
+        }}
+      >
+        {content || ''}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 /* ──────────────────────────── Copy Button ────────────────────────── */
@@ -496,7 +529,6 @@ function ChatWindow({
                 ) : (
                   <MessageText 
                     content={msg.content}
-                    msgId={msg.id}
                   />
                 )}
               </div>
