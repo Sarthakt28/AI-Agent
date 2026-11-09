@@ -21,6 +21,11 @@ function Auth({ onLogin }) {
       return;
     }
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
     setLoading(true);
 
     const endpoint = isLogin ? '/auth/login' : '/auth/signup';
@@ -85,7 +90,7 @@ function Auth({ onLogin }) {
         <div className="auth-logo">
           <Cpu size={32} />
         </div>
-        <h1>Optimus AI</h1>
+        <h1>OPTIMUS</h1>
         <p className="auth-subtitle">Autonomous agent with RAG &amp; Docker Sandbox</p>
 
         <div className="auth-toggle">

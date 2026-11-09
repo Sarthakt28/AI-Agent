@@ -20,7 +20,7 @@ function Sidebar({ token, runs, activeRunId, onSelectRun, onNewRun, onDeleteRun,
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <Cpu size={20} />
-          <span>Optimus AI</span>
+          <span>OPTIMUS</span>
         </div>
         <button className="icon-btn sidebar-close-btn mobile-only" onClick={onClose} title="Close sidebar">
           <X size={18} />
@@ -104,7 +104,7 @@ function CodeBlockComponent({ language, code }) {
 }
 
 /* ──────────────────────────── Markdown Formatter ─────────────────── */
-function formatMessageContent(content) {
+function formatMessageContent(content, keyPrefix = 'msg') {
   if (!content) return '';
   const lines = content.split('\n');
   const elements = [];
@@ -194,6 +194,7 @@ function formatMessageContent(content) {
 
   lines.forEach((line, lineIdx) => {
     const trimmed = line.trim();
+    const k = `${keyPrefix}-${lineIdx}`;
 
     // ─── Code Block Toggle (``` handling) ───
     if (trimmed.startsWith('```')) {
@@ -202,9 +203,9 @@ function formatMessageContent(content) {
         // Flush any pending list
         if (inList) {
           if (inOrderedList) {
-            elements.push(<ol key={`list-${lineIdx}`}>{listItems}</ol>);
+            elements.push(<ol key={`${k}-ol`}>{listItems}</ol>);
           } else {
-            elements.push(<ul key={`list-${lineIdx}`}>{listItems}</ul>);
+            elements.push(<ul key={`${k}-ul`}>{listItems}</ul>);
           }
           inList = false;
           inOrderedList = false;
@@ -217,7 +218,7 @@ function formatMessageContent(content) {
         // Exiting code block → render it
         elements.push(
           <CodeBlockComponent
-            key={`code-${lineIdx}`}
+            key={`${k}-code`}
             language={codeLanguage}
             code={codeLines.join('\n')}
           />
@@ -243,7 +244,7 @@ function formatMessageContent(content) {
         listItems = [];
       }
       const itemText = trimmed.substring(2);
-      listItems.push(<li key={lineIdx}>{parseInline(itemText)}</li>);
+      listItems.push(<li key={k}>{parseInline(itemText)}</li>);
       return;
     }
 
@@ -255,16 +256,16 @@ function formatMessageContent(content) {
         inOrderedList = true;
         listItems = [];
       }
-      listItems.push(<li key={lineIdx}>{parseInline(orderedMatch[2])}</li>);
+      listItems.push(<li key={k}>{parseInline(orderedMatch[2])}</li>);
       return;
     }
 
     // Flush pending list before any non-list line
     if (inList) {
       if (inOrderedList) {
-        elements.push(<ol key={`list-${lineIdx}`}>{listItems}</ol>);
+        elements.push(<ol key={`${k}-ol`}>{listItems}</ol>);
       } else {
-        elements.push(<ul key={`list-${lineIdx}`}>{listItems}</ul>);
+        elements.push(<ul key={`${k}-ul`}>{listItems}</ul>);
       }
       inList = false;
       inOrderedList = false;
@@ -273,28 +274,28 @@ function formatMessageContent(content) {
 
     // ─── Empty Lines ───
     if (trimmed === '') {
-      elements.push(<div key={lineIdx} style={{ height: '8px' }} />);
+      elements.push(<div key={k} style={{ height: '8px' }} />);
       return;
     }
 
     // ─── Headings ───
     if (trimmed.startsWith('### ')) {
-      elements.push(<h4 key={lineIdx} className="msg-heading msg-h3">{parseInline(trimmed.substring(4))}</h4>);
+      elements.push(<h4 key={k} className="msg-heading msg-h3">{parseInline(trimmed.substring(4))}</h4>);
       return;
     }
     if (trimmed.startsWith('## ')) {
-      elements.push(<h3 key={lineIdx} className="msg-heading msg-h2">{parseInline(trimmed.substring(3))}</h3>);
+      elements.push(<h3 key={k} className="msg-heading msg-h2">{parseInline(trimmed.substring(3))}</h3>);
       return;
     }
     if (trimmed.startsWith('# ')) {
-      elements.push(<h2 key={lineIdx} className="msg-heading msg-h1">{parseInline(trimmed.substring(2))}</h2>);
+      elements.push(<h2 key={k} className="msg-heading msg-h1">{parseInline(trimmed.substring(2))}</h2>);
       return;
     }
 
     // ─── Blockquotes ───
     if (trimmed.startsWith('> ')) {
       elements.push(
-        <blockquote key={lineIdx} className="msg-blockquote">
+        <blockquote key={k} className="msg-blockquote">
           {parseInline(trimmed.substring(2))}
         </blockquote>
       );
@@ -303,20 +304,20 @@ function formatMessageContent(content) {
 
     // ─── Horizontal Rule ───
     if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
-      elements.push(<hr key={lineIdx} className="msg-hr" />);
+      elements.push(<hr key={k} className="msg-hr" />);
       return;
     }
 
     // ─── Regular Paragraph ───
-    elements.push(<p key={lineIdx} className="message-paragraph">{parseInline(line)}</p>);
+    elements.push(<p key={k} className="message-paragraph">{parseInline(line)}</p>);
   });
 
   // Flush remaining list
   if (inList) {
     if (inOrderedList) {
-      elements.push(<ol key="list-final">{listItems}</ol>);
+      elements.push(<ol key={`${keyPrefix}-list-final`}>{listItems}</ol>);
     } else {
-      elements.push(<ul key="list-final">{listItems}</ul>);
+      elements.push(<ul key={`${keyPrefix}-list-final`}>{listItems}</ul>);
     }
   }
 
@@ -324,7 +325,7 @@ function formatMessageContent(content) {
   if (inCodeBlock && codeLines.length > 0) {
     elements.push(
       <CodeBlockComponent
-        key="code-final"
+        key={`${keyPrefix}-code-final`}
         language={codeLanguage}
         code={codeLines.join('\n')}
       />
@@ -335,8 +336,8 @@ function formatMessageContent(content) {
 }
 
 /* ──────────────────────────── Message Text ───────────────────────── */
-function MessageText({ content }) {
-  return <div className="message-text">{formatMessageContent(content)}</div>;
+function MessageText({ content, msgId }) {
+  return <div className="message-text">{formatMessageContent(content, String(msgId || 'msg'))}</div>;
 }
 
 /* ──────────────────────────── Copy Button ────────────────────────── */
@@ -453,7 +454,7 @@ function ChatWindow({
     return (
       <div className="chat-empty">
         <div className="chat-empty-icon"><Bot size={40} /></div>
-        <h3>Ask Optimus AI anything</h3>
+        <h3>Ask OPTIMUS anything</h3>
         <p>Type a message below. You can also upload documents for RAG search.</p>
       </div>
     );
@@ -494,7 +495,8 @@ function ChatWindow({
                   </div>
                 ) : (
                   <MessageText 
-                    content={msg.content} 
+                    content={msg.content}
+                    msgId={msg.id}
                   />
                 )}
               </div>
@@ -561,6 +563,7 @@ function MessageInput({ onSend, onUpload, disabled }) {
           onKeyDown={handleKey}
           disabled={disabled}
           rows={1}
+          maxLength={8000}
         />
         <div className="message-input-actions">
           <button
@@ -913,6 +916,19 @@ function Dashboard({ user, token, onLogout }) {
     setAgentLoading(true);
     setError('');
 
+    // FIX #5: Use a ref so the streaming loop always works with live message state,
+    // not a stale closure snapshot captured at function-call time.
+    const liveMessages = { current: [...messages, tempMsg] };
+
+    // FIX #4: 2-minute hard timeout — prevents input from staying permanently disabled
+    // if the stream drops without sending a 'done' event.
+    let streamTimedOut = false;
+    const streamTimeout = setTimeout(() => {
+      streamTimedOut = true;
+      setAgentLoading(false);
+      setError('Response timed out. The server may be busy — please try again.');
+    }, 120000);
+
     try {
       const res = await fetch(`${API_BASE}/agent/run/${activeRunId}/message/stream`, {
         method: 'POST',
@@ -929,9 +945,8 @@ function Dashboard({ user, token, onLogout }) {
       const decoder = new TextDecoder();
       let buffer = '';
       let currentAssistantText = '';
-      let currentMessages = [...messages, tempMsg];
 
-      while (true) {
+      while (!streamTimedOut) {
         const { value, done } = await reader.read();
         if (done) break;
 
@@ -958,20 +973,20 @@ function Dashboard({ user, token, onLogout }) {
 
           if (eventName === 'status') {
             const data = JSON.parse(dataVal);
-            currentMessages = currentMessages.map((m) =>
+            liveMessages.current = liveMessages.current.map((m) =>
               m.key === clientKey ? { ...m, id: data.user_message_id } : m
             );
-            setMessages(currentMessages);
+            setMessages(liveMessages.current);
           } else if (eventName === 'token') {
             currentAssistantText += dataVal;
-            const lastMsg = currentMessages[currentMessages.length - 1];
+            const lastMsg = liveMessages.current[liveMessages.current.length - 1];
             if (lastMsg && (lastMsg.key === 'streaming_assistant' || lastMsg.id === 'streaming_assistant')) {
-              currentMessages[currentMessages.length - 1] = {
+              liveMessages.current[liveMessages.current.length - 1] = {
                 ...lastMsg,
                 content: currentAssistantText,
               };
             } else {
-              currentMessages.push({
+              liveMessages.current.push({
                 id: 'streaming_assistant',
                 key: 'streaming_assistant',
                 role: 'assistant',
@@ -979,10 +994,10 @@ function Dashboard({ user, token, onLogout }) {
                 created_at: new Date().toISOString(),
               });
             }
-            setMessages([...currentMessages]);
+            setMessages([...liveMessages.current]);
           } else if (eventName === 'tool_start') {
             const data = JSON.parse(dataVal);
-            currentMessages.push({
+            liveMessages.current.push({
               id: 'tool_call_' + Date.now() + '_' + data.tool_name,
               role: 'tool_call',
               tool_name: data.tool_name,
@@ -990,27 +1005,27 @@ function Dashboard({ user, token, onLogout }) {
               created_at: new Date().toISOString(),
             });
             currentAssistantText = '';
-            setMessages([...currentMessages]);
+            setMessages([...liveMessages.current]);
           } else if (eventName === 'tool_end') {
             const data = JSON.parse(dataVal);
-            currentMessages.push({
+            liveMessages.current.push({
               id: 'tool_result_' + Date.now() + '_' + data.tool_name,
               role: 'tool_result',
               tool_name: data.tool_name,
               content: data.output,
               created_at: new Date().toISOString(),
             });
-            setMessages([...currentMessages]);
+            setMessages([...liveMessages.current]);
           } else if (eventName === 'error') {
             const data = JSON.parse(dataVal);
             setError(data.detail || 'Streaming error occurred');
           } else if (eventName === 'done') {
             const data = JSON.parse(dataVal);
             if (data.assistant_message_id) {
-              const lastIdx = currentMessages.length - 1;
-              if (lastIdx >= 0 && currentMessages[lastIdx].role === 'assistant') {
-                currentMessages[lastIdx] = {
-                  ...currentMessages[lastIdx],
+              const lastIdx = liveMessages.current.length - 1;
+              if (lastIdx >= 0 && liveMessages.current[lastIdx].role === 'assistant') {
+                liveMessages.current[lastIdx] = {
+                  ...liveMessages.current[lastIdx],
                   id: data.assistant_message_id
                 };
               }
@@ -1020,10 +1035,13 @@ function Dashboard({ user, token, onLogout }) {
         }
       }
     } catch (err) {
-      setError(err.message);
-      setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
-      await fetchMessages(activeRunId, false);
+      if (!streamTimedOut) {
+        setError(err.message);
+        setMessages((prev) => prev.filter((m) => m.id !== tempMsg.id));
+        await fetchMessages(activeRunId, false);
+      }
     } finally {
+      clearTimeout(streamTimeout);
       setAgentLoading(false);
     }
   }

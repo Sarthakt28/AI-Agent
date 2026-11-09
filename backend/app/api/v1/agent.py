@@ -410,6 +410,18 @@ def delete_run(
         except Exception as e:
             print(f"Failed to delete ChromaDB documents for run {run_id}: {e}")
 
+    # Clear the LangGraph in-memory checkpointer for this thread to free RAM
+    try:
+        from app.agent.brain import agent_executor, memory
+        thread_key = f"run_{run_id}"
+        if hasattr(memory, 'storage') and isinstance(memory.storage, dict):
+            keys_to_remove = [k for k in memory.storage if k[0] == thread_key or (isinstance(k, tuple) and k[0] == thread_key)]
+            for k in keys_to_remove:
+                memory.storage.pop(k, None)
+            print(f"[MEMORY] Cleared LangGraph checkpointer state for thread '{thread_key}'")
+    except Exception as e:
+        print(f"[MEMORY WARNING] Could not clear checkpointer for run {run_id}: {e}")
+
     return {"detail": "Session deleted."}
 
 
@@ -549,10 +561,12 @@ async def edit_message(
                     tool_calls=[m.tool_data] if isinstance(m.tool_data, dict) else []
                 ))
             elif m.role == "tool_result" and m.tool_data:
-                langchain_messages.append(ToolMessage(
-                    content=m.content or "",
-                    tool_call_id=m.tool_data.get("tool_call_id", "unknown")
-                ))
+                tool_call_id = m.tool_data.get("tool_call_id")
+                if tool_call_id:  # only include if we have a valid, matching ID
+                    langchain_messages.append(ToolMessage(
+                        content=m.content or "",
+                        tool_call_id=tool_call_id
+                    ))
 
         async def event_generator():
             # Start a fresh thread state with history

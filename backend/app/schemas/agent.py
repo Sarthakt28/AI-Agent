@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
 class AgentRunRequest(BaseModel):
-    goal: str
+    goal: str = Field(default="General assistant", min_length=1, max_length=200)
 
 class AgentRunResponse(BaseModel):
     id: int
@@ -27,4 +27,4 @@ class MessageResponse(BaseModel):
         from_attributes = True
 
 class MessageCreateRequest(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=8000)

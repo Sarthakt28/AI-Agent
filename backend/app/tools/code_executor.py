@@ -1,10 +1,7 @@
 import base64
 import docker
 from docker.errors import ImageNotFound, DockerException
-import subprocess
-import tempfile
 import os
-import sys
 
 # Module-level Docker client singleton (reuse connection across requests)
 _docker_client = None
@@ -25,42 +22,14 @@ def _get_docker_client():
 
 def _execute_python_code_subprocess(code: str) -> str:
     """
-    Fallback execution using python subprocess.
-    Used when Docker is not available (e.g. Render / serverless platforms).
+    Fallback when Docker is not available.
+    Refuses to run user code without sandbox isolation for security.
     """
-    try:
-        # Create a temporary file to hold the code
-        with tempfile.NamedTemporaryFile(suffix=".py", delete=False, mode="w", encoding="utf-8") as f:
-            f.write(code)
-            temp_file_path = f.name
-        
-        try:
-            # Run the python script in a subprocess with a timeout
-            result = subprocess.run(
-                [sys.executable, temp_file_path],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            stdout = result.stdout
-            stderr = result.stderr
-            
-            output = []
-            if stdout:
-                output.append(stdout)
-            if stderr:
-                output.append(f"Error Output:\n{stderr}")
-                
-            final_output = "\n".join(output)
-            return final_output if final_output.strip() else "Code executed successfully (no output)."
-        finally:
-            # Clean up the temp file
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
-    except subprocess.TimeoutExpired:
-        return "Error: Code execution timed out (exceeded 10 seconds limit)."
-    except Exception as ex:
-        return f"Error during local subprocess execution: {str(ex)}"
+    return (
+        "[SANDBOX ERROR] Code execution requires Docker to be running for security isolation. "
+        "Docker is currently unavailable on this server. "
+        "Please start Docker Desktop and restart the backend, then try again."
+    )
 
 def execute_python_code(code: str) -> str:
     # 1. Connect to Docker. If fails, fallback to local subprocess.

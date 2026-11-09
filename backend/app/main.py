@@ -12,8 +12,8 @@ Base.metadata.create_all(bind=engine)
 
 # ====== FastAPI App ======
 app = FastAPI(
-    title="Optimus AI Platform",
-    description="Autonomous Optimus AI Agent with tool calling, web search, code execution, and RAG",
+    title="OPTIMUS",
+    description="Autonomous OPTIMUS Agent with tool calling, web search, code execution, and RAG",
     version="1.0.0",
 )
 
@@ -35,10 +35,10 @@ app.include_router(agent_router, prefix="/api/v1")
 # ====== Root Route ======
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Optimus AI Platform API. Go to /docs for API documentation."}
+    return {"message": "Welcome to OPTIMUS API. Go to /docs for API documentation."}
 
 # ====== Health Check ======
 @app.get("/health")
 def health_check():
     """Server alive or not — for monitoring"""
-    return {"status": "healthy", "service": "Optimus AI Platform"}
+    return {"status": "healthy", "service": "OPTIMUS"}

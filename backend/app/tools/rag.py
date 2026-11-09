@@ -221,12 +221,14 @@ def query_documents(query: str, run_id: int = None, n_results: int = 3) -> str:
     try:
         where_filter = {"run_id": run_id}
 
-        # FIX: Cap n_results to available docs to avoid ChromaDB crash on small collections
+        # FIX: Count only THIS session's documents to properly cap n_results.
+        # collection.count() counts ALL sessions — collection.get() with the filter is correct.
         try:
-            total_docs = collection.count()
-            if total_docs == 0:
+            session_docs = collection.get(where=where_filter)
+            session_doc_count = len(session_docs.get("ids", []))
+            if session_doc_count == 0:
                 return "No documents have been uploaded to this session yet."
-            n_results = min(n_results, total_docs)
+            n_results = min(n_results, session_doc_count)
         except Exception:
             pass
 
